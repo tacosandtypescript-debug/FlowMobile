@@ -90,7 +90,7 @@ def _read_url(url: str, timeout: int = 5) -> str:
         return response.read().decode("utf-8").strip()
 
 
-def check_available_updates() -> UpdateCheck:
+def check_available_updates(include_package_manager: bool = True) -> UpdateCheck:
     repository = configured_repository()
     check = UpdateCheck(repository=repository)
     errors: list[str] = []
@@ -121,7 +121,7 @@ def check_available_updates() -> UpdateCheck:
             except (OSError, UnicodeError, URLError):
                 # La versión sigue siendo válida aunque GitHub no entregue las notas.
                 pass
-    if PLATFORM.is_termux:
+    if PLATFORM.is_termux and include_package_manager:
         try:
             refreshed = subprocess.run(
                 ["pkg", "update", "-y"],

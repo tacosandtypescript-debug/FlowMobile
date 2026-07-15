@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## 7.4.1 — 2026-07-15
+
+- El menú principal aparece inmediatamente sin esperar consultas de Internet.
+- Revisión de FlowMobile y yt-dlp ejecutada de forma silenciosa en segundo plano.
+- Estado visible «Revisando en segundo plano» mientras finaliza la comprobación.
+- La revisión completa de Termux también continúa en segundo plano sin bloquear el panel.
+- Limpieza de pantalla más ligera para reducir parpadeos y retrasos en a-Shell.
+- Conteo de archivos y almacenamiento del panel realizado en una sola pasada.
+- Prueba de regresión para impedir que el inicio ejecute `pkg update`.
+
 ## 7.4.0 — 2026-07-15
 
 - Barra estable con velocidad suavizada, porcentaje y tiempo restante calculado.

@@ -1,8 +1,10 @@
 from __future__ import annotations
 from datetime import datetime
+import os
 import shutil
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -50,9 +52,11 @@ class FlowCLI:
         self.download_progress = DownloadProgress()
         self.flow_update_version: str | None = None
         self.flow_release_notes: tuple[str, ...] = ()
+        self.update_check_running = False
+        self._update_lock = threading.Lock()
 
     def clear(self) -> None:
-        print("\033[2J\033[3J\033[H", end="", flush=True)
+        print("\033[2J\033[H", end="", flush=True)
 
     def line(self, width: int = 38) -> str:
         return "─" * width
@@ -117,9 +121,13 @@ class FlowCLI:
     def dashboard(self) -> None:
         def folder_stats(folder: Path) -> tuple[int, int]:
             try:
-                files = [path for path in folder.iterdir() if path.is_file()]
-                size = sum(path.stat().st_size for path in files)
-                return len(files), size
+                count = size = 0
+                with os.scandir(folder) as entries:
+                    for entry in entries:
+                        if entry.is_file(follow_symlinks=False):
+                            count += 1
+                            size += entry.stat(follow_symlinks=False).st_size
+                return count, size
             except OSError:
                 return 0, 0
 
@@ -134,6 +142,8 @@ class FlowCLI:
         tools_label = "✓ Herramientas listas" if tools_ok else "! Revisar herramientas"
         if not self.settings.auto_updates:
             update_label, update_color = "○ Actualización manual", GRAY
+        elif self.update_check_running:
+            update_label, update_color = "○ Revisando en segundo plano", CYAN
         elif self.settings.last_update_ok is True:
             update_label, update_color = "✓ Todo actualizado", GREEN
         elif self.settings.last_update_ok is False:
@@ -608,12 +618,7 @@ class FlowCLI:
             print()
         self.pause()
 
-    def check_updates(self, force: bool = False, interactive: bool = False) -> None:
-        if not force and not self.settings.auto_updates:
-            return
-        self.logo("COMPROBAR ACTUALIZACIONES")
-        print(f"{CYAN}Revisando FlowMobile y sus herramientas…{RESET}")
-        check = check_available_updates()
+    def record_update_check(self, check: Any) -> tuple[bool, bool, bool, bool]:
         flow_pending = is_newer(check.flow_latest, APP_VERSION)
         if flow_pending:
             self.flow_update_version = check.flow_latest
@@ -622,12 +627,7 @@ class FlowCLI:
             self.flow_update_version = None
             self.flow_release_notes = ()
         ytdlp_pending = is_newer(check.ytdlp_latest, yt_dlp.version.__version__)
-        ffmpeg_pending = check.ffmpeg_pending
         ffmpeg_available, ffprobe_available = tools_status()
-        termux_tools_missing = PLATFORM.is_termux and not (
-            ffmpeg_available and ffprobe_available
-        )
-
         self.settings.last_update_check = datetime.now().isoformat(timespec="seconds")
         self.settings.last_update_ok = (
             not bool(check.error)
@@ -638,12 +638,31 @@ class FlowCLI:
             and ffprobe_available
             and not flow_pending
             and not ytdlp_pending
-            and not ffmpeg_pending
+            and not check.ffmpeg_pending
         )
         try:
             save_settings(self.settings)
         except OSError:
             pass
+        return flow_pending, ytdlp_pending, ffmpeg_available, ffprobe_available
+
+    def check_updates(self, force: bool = False, interactive: bool = False) -> None:
+        if not force and not self.settings.auto_updates:
+            return
+        self.logo("COMPROBAR ACTUALIZACIONES")
+        print(f"{CYAN}Revisando FlowMobile y sus herramientas…{RESET}")
+        with self._update_lock:
+            check = check_available_updates()
+            (
+                flow_pending,
+                ytdlp_pending,
+                ffmpeg_available,
+                ffprobe_available,
+            ) = self.record_update_check(check)
+        ffmpeg_pending = check.ffmpeg_pending
+        termux_tools_missing = PLATFORM.is_termux and not (
+            ffmpeg_available and ffprobe_available
+        )
 
         if check.repository is None:
             print(f"{YELLOW}! FlowMobile: repositorio de GitHub sin configurar.{RESET}")
@@ -729,6 +748,26 @@ class FlowCLI:
                 print(f"{GRAY}FFmpeg y FFprobe se actualizan junto con a-Shell.{RESET}")
             self.pause()
 
+    def start_background_update_check(self) -> None:
+        """Comprueba Internet sin impedir que aparezca el menú principal."""
+        if not self.settings.auto_updates or self.update_check_running:
+            return
+        self.update_check_running = True
+
+        def worker() -> None:
+            try:
+                with self._update_lock:
+                    check = check_available_updates()
+                    self.record_update_check(check)
+            finally:
+                self.update_check_running = False
+
+        threading.Thread(
+            target=worker,
+            name="flowmobile-update-check",
+            daemon=True,
+        ).start()
+
     def show_settings(self) -> None:
         kind_labels = {"ask": "Preguntar siempre", "video": "Video", "audio": "Solo audio"}
         audio_labels = {"auto": "Automático", "m4a": "M4A", "mp3": "MP3"}
@@ -775,7 +814,7 @@ class FlowCLI:
                 self.pause()
 
     def run(self) -> None:
-        self.check_updates()
+        self.start_background_update_check()
         while True:
             self.logo("MENÚ PRINCIPAL")
             self.dashboard()

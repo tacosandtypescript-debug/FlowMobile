@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.4.0**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.4.1**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -97,6 +97,7 @@ el siguiente inicio.
 - Modo Reparar para revisar dependencias y retirar únicamente temporales dañados.
 - Pruebas reales guiadas para 360p, 720p, 1080p, máxima calidad, M4A y MP3.
 - Informes privados con resolución, códecs, tamaño y disponibilidad para compartir.
+- Apertura inmediata del menú mientras las actualizaciones se revisan en segundo plano.
 
 ## Modo Reparar y pruebas reales
 
