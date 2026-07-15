@@ -95,17 +95,26 @@ try {
     if (-not $SkipPython) {
         $python = $null
         $prefix = @()
-        $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
-        if ($pyLauncher) {
-            $python = $pyLauncher.Source
-            $prefix = @("-3")
-        } else {
+        if ($env:pythonLocation) {
+            $actionsPython = Join-Path $env:pythonLocation "python.exe"
+            if (Test-Path -LiteralPath $actionsPython -PathType Leaf) {
+                $python = $actionsPython
+            }
+        }
+        if (-not $python) {
             foreach ($name in @("python3", "python")) {
                 $candidate = Get-Command $name -ErrorAction SilentlyContinue
                 if ($candidate -and $candidate.Source -notlike "*WindowsApps*") {
                     $python = $candidate.Source
                     break
                 }
+            }
+        }
+        if (-not $python) {
+            $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+            if ($pyLauncher) {
+                $python = $pyLauncher.Source
+                $prefix = @("-3")
             }
         }
 

@@ -1,8 +1,10 @@
 # Git debe conservar finales de línea compatibles con a-Shell y Termux.
 * text=auto
+.gitattributes text eol=lf
 
 *.py text eol=lf
 *.sh text eol=lf
+*.ps1 text eol=lf
 scripts/flow text eol=lf
 *.md text eol=lf
 *.txt text eol=lf

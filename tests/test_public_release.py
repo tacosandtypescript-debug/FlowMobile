@@ -25,6 +25,15 @@ class PublicReleaseTests(unittest.TestCase):
         for name in ("LICENSE", "SECURITY.md", "CONTRIBUTING.md"):
             self.assertTrue((ROOT / name).is_file(), name)
 
+    def test_windows_release_check_prefers_actions_python(self):
+        script = (ROOT / "scripts" / "check-release.ps1").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("$env:pythonLocation", script)
+        self.assertLess(
+            script.index("$env:pythonLocation"), script.index("Get-Command py")
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

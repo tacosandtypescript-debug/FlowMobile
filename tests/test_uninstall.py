@@ -42,7 +42,7 @@ class UninstallTests(unittest.TestCase):
             self.assertTrue(result.ok)
             self.assertFalse(app.exists())
             saved = documents / ".flowmobile-data"
-            self.assertEqual(result.preserved_at, str(saved))
+            self.assertTrue(Path(result.preserved_at).samefile(saved))
             self.assertTrue((saved / "Downloads" / "video.mp4").exists())
             self.assertTrue((saved / ".flowmobile" / "settings.json").exists())
             self.assertFalse((documents / "bin" / "flow.py").exists())

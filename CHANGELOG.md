@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 7.6.1 — 2026-07-15
+
+- La comprobación de publicación usa exactamente el Python preparado por GitHub Actions.
+- Compatibilidad de la prueba de desinstalación con rutas cortas y largas equivalentes de Windows.
+- Regresión de CI corregida sin cambiar el comportamiento de a-Shell ni Termux.
+
 ## 7.6.0 — 2026-07-15
 
 - Detección confirmada de enlaces del portapapeles mediante `pbpaste` en a-Shell y Termux:API en Android.
