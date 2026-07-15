@@ -42,7 +42,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Corregir activación de FlowMobile 7.6.2 en a-Shell"
+git commit -m "Activar FlowMobile 7.6.3 en la sesión actual de a-Shell"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -68,7 +68,7 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 89
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 90
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
@@ -78,8 +78,8 @@ primero la prueba completa en Termux y después repítela en a-Shell.
 Cuando `main` esté verde y la matriz de `docs/DEVICE_TESTING.md` esté completa:
 
 ```powershell
-git tag -a v7.6.2 -m "FlowMobile 7.6.2"
-git push origin v7.6.2
+git tag -a v7.6.3 -m "FlowMobile 7.6.3"
+git push origin v7.6.3
 ```
 
 La acción `Release` comprueba que la etiqueta coincida con `VERSION`, ejecuta

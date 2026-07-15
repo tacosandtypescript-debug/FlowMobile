@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 7.6.3 — 2026-07-15
+
+- Activación inmediata del alias `flow` en la sesión actual de a-Shell mediante `ios_system`.
+- El `.profile` se mantiene como registro permanente para todas las ventanas futuras.
+- Respaldo explícito mediante carga manual del perfil cuando la API nativa no esté disponible.
+- Prueba de regresión que verifica la orden exacta enviada al sistema de alias de a-Shell.
+
 ## 7.6.2 — 2026-07-15
 
 - El instalador de a-Shell verifica el archivo lanzador y el alias antes de informar éxito.

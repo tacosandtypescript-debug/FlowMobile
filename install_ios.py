@@ -150,6 +150,23 @@ def _valid_launcher_configuration(documents: Path, app_directory: Path) -> bool:
     )
 
 
+def _activate_current_session(app_directory: Path, executor=None) -> bool:
+    """Registra el alias en el diccionario global de ios_system de a-Shell."""
+    if executor is None:
+        try:
+            import ctypes
+
+            executor = ctypes.CDLL(None).ios_system
+            executor.argtypes = (ctypes.c_char_p,)
+            executor.restype = ctypes.c_int
+        except (AttributeError, ImportError, OSError):
+            return False
+    try:
+        return executor(_flow_alias(app_directory).encode("utf-8")) == 0
+    except (OSError, TypeError, ValueError):
+        return False
+
+
 def _remove_profile_configuration(documents: Path) -> None:
     profile = documents / ".profile"
     try:
@@ -324,10 +341,13 @@ def install(
 
     print("FlowMobile instalado para iOS con una copia limpia.")
     print("El comando flow quedó registrado correctamente.")
-    print("Esta misma ventana todavía no ha recargado .profile.")
-    print("Para abrirlo aquí, ejecuta AHORA como una orden separada:")
-    print("cd && . ./.profile && flow")
-    print("También puedes abrir una ventana NUEVA de a-Shell y escribir: flow")
+    if _activate_current_session(app_directory):
+        print("flow ya está activo en esta misma ventana. Escribe: flow")
+    else:
+        print("a-Shell no permitió activar el alias en esta ventana.")
+        print("Ejecuta AHORA como una orden separada:")
+        print("cd && . ./.profile && flow")
+    print("En las ventanas nuevas solo necesitas escribir: flow")
     return app_directory
 
 

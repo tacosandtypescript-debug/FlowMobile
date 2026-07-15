@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.6.2**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.6.3**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
@@ -29,10 +29,10 @@ a-Shell y escribe `flow`. El instalador no abre el menú dentro de la tubería d
 `curl`, porque esa entrada ya está cerrada. No añadas `sh`, `&&` ni otros
 comandos al enlace.
 
-Si quieres continuar en la misma ventana después de que el instalador termine,
-ejecuta como una orden nueva: `cd && . ./.profile && flow`. a-Shell carga
-automáticamente `.profile` al crear una ventana nueva, pero no puede modificar
-la ventana padre desde el proceso Python conectado a `curl`.
+El instalador registra `flow` en la sesión actual mediante `ios_system` y lo
+conserva en `.profile` para las ventanas futuras. Si una versión de a-Shell no
+permite la activación inmediata, el propio instalador muestra el respaldo
+`cd && . ./.profile && flow` como una orden separada.
 
 ## Instalación en Termux
 

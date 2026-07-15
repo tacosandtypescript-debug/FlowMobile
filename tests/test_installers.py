@@ -6,6 +6,7 @@ from unittest.mock import patch
 from bootstrap_ios import latest_stable_reference
 
 from install_ios import (
+    _activate_current_session,
     _clean_installations,
     _copy_preserved,
     _configure_profile,
@@ -98,8 +99,22 @@ class InstallerCompatibilityTests(unittest.TestCase):
 
     def test_ios_installer_explains_activation_in_current_window(self):
         content = (ROOT / "install_ios.py").read_text(encoding="utf-8")
-        self.assertIn("Esta misma ventana todavía no ha recargado .profile", content)
+        self.assertIn("flow ya está activo en esta misma ventana", content)
         self.assertIn("cd && . ./.profile && flow", content)
+
+    def test_current_ashell_session_receives_flow_alias(self):
+        commands = []
+
+        def executor(command):
+            commands.append(command)
+            return 0
+
+        app = Path("/private/app/Documents/FlowMobile")
+        self.assertTrue(_activate_current_session(app, executor))
+        self.assertEqual(
+            commands,
+            [b'alias flow=\'python3 "/private/app/Documents/FlowMobile/main.py"\''],
+        )
 
     def test_clean_install_merges_data_and_removes_legacy_code(self):
         with TemporaryDirectory() as temporary:
