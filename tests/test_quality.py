@@ -4,10 +4,22 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from flow.infrastructure.ffmpeg import probe_media
-from flow.infrastructure.ytdlp_gateway import available_resolutions, estimate_size
+from flow.infrastructure.ytdlp_gateway import (
+    available_resolutions,
+    common_options,
+    estimate_size,
+    retry_delay,
+)
 
 
 class QualityDetectionTests(unittest.TestCase):
+    def test_download_options_back_off_between_retries(self):
+        options = common_options(lambda _: None)
+        self.assertEqual(options["sleep_interval_requests"], 0.75)
+        self.assertEqual(retry_delay(0), 1.0)
+        self.assertEqual(retry_delay(10), 30.0)
+        self.assertIn("http", options["retry_sleep_functions"])
+
     def test_horizontal_and_vertical_video_use_short_dimension(self):
         info = {
             "formats": [

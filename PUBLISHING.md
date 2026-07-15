@@ -7,6 +7,7 @@
 - `install.sh`, `install-ios.sh`, `bootstrap_ios.py`, `install_ios.py` e
   `install-termux.sh`.
 - `README.md`, `CHANGELOG.md` y `PUBLISHING.md`.
+- `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/` y `.github/`.
 
 ## Qué no se sube
 
@@ -41,7 +42,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Corregir desinstalación y restauración de datos 7.5.3"
+git commit -m "Preparar lanzamiento público FlowMobile 7.6.0"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -67,10 +68,24 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 69
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 86
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
+
+## Crear una versión estable
+
+Cuando `main` esté verde y la matriz de `docs/DEVICE_TESTING.md` esté completa:
+
+```powershell
+git tag -a v7.6.0 -m "FlowMobile 7.6.0"
+git push origin v7.6.0
+```
+
+La acción `Release` comprueba que la etiqueta coincida con `VERSION`, ejecuta
+las pruebas y publica ZIP, TAR.GZ y `SHA256SUMS`. FlowMobile consulta primero el
+Release estable más reciente; solo usa `main` mientras el repositorio todavía
+no tenga ningún Release.
 
 ## Órdenes públicas
 

@@ -14,6 +14,9 @@ class AppSettings:
     video_quality: str = "best"
     audio_format: str = "auto"
     auto_updates: bool = True
+    clipboard_detection: bool = True
+    colors: bool = True
+    interface_mode: str = "compact"
     last_update_check: str | None = None
     last_update_ok: bool | None = None
 
@@ -26,6 +29,12 @@ class AppSettings:
             self.audio_format = "auto"
         if not isinstance(self.auto_updates, bool):
             self.auto_updates = True
+        if not isinstance(self.clipboard_detection, bool):
+            self.clipboard_detection = True
+        if not isinstance(self.colors, bool):
+            self.colors = True
+        if self.interface_mode not in {"compact", "accessible"}:
+            self.interface_mode = "compact"
         return self
 
 def load_settings() -> AppSettings:
@@ -41,6 +50,9 @@ def load_settings() -> AppSettings:
             video_quality=str(data.get("video_quality", "best")),
             audio_format=str(data.get("audio_format", "auto")),
             auto_updates=data.get("auto_updates", True),
+            clipboard_detection=data.get("clipboard_detection", True),
+            colors=data.get("colors", True),
+            interface_mode=str(data.get("interface_mode", "compact")),
             last_update_check=data.get("last_update_check"),
             last_update_ok=data.get("last_update_ok"),
         ).normalize()

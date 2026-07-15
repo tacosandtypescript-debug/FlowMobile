@@ -14,15 +14,17 @@ def _run(command: list[str]) -> bool:
 
 
 def open_share(path: Path) -> bool:
+    portable_path = path.as_posix()
     if PLATFORM.is_termux:
-        return _run(["termux-open", "--send", str(path)])
-    return _run(["open", str(path)])
+        return _run(["termux-open", "--send", portable_path])
+    return _run(["open", portable_path])
 
 
 def play_media(path: Path) -> bool:
+    portable_path = path.as_posix()
     if PLATFORM.is_termux:
-        return _run(["termux-open", str(path)])
-    return _run(["play", str(path)])
+        return _run(["termux-open", portable_path])
+    return _run(["play", portable_path])
 
 
 def notify_complete(path: Path) -> bool:

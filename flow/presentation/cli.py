@@ -1,6 +1,5 @@
 from __future__ import annotations
 from contextlib import contextmanager, redirect_stdout
-from datetime import datetime
 from io import StringIO
 import os
 import shutil
@@ -9,7 +8,6 @@ import sys
 import threading
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
 import yt_dlp
 
@@ -27,6 +25,9 @@ from flow.domain.errors import friendly_error
 from flow.domain.formatting import format_bytes, format_time
 from flow.domain.models import DownloadChoice, MediaInfo
 from flow.domain.progress import DownloadProgress
+from flow.domain.sites import platform_name
+from flow.domain.urls import is_web_url
+from flow.infrastructure.clipboard import clipboard_urls
 from flow.infrastructure.ffmpeg import tools_status
 from flow.infrastructure.history import HistoryError, load_history, search_history
 from flow.infrastructure.batches import (
@@ -43,17 +44,20 @@ from flow.infrastructure.repair import (
     dependency_statuses,
     repair_dependencies,
 )
-from flow.infrastructure.sessions import import_cookies, remove_cookies, session_status
-from flow.infrastructure.uninstall import uninstall
-from flow.infrastructure.settings import load_settings, save_settings
-from flow.infrastructure.updates import (
-    check_available_updates,
-    is_newer,
-    update_ffmpeg,
-    update_flowmobile,
-    update_ytdlp as update_ytdlp_package,
-)
+from flow.infrastructure.settings import load_settings
 from flow.presentation.theme import *
+from flow.presentation.tools_menu import (
+    show_diagnostic as run_diagnostic_menu,
+    show_sessions as run_sessions_menu,
+    show_settings as run_settings_menu,
+    show_tools as run_tools_menu,
+    show_uninstall as run_uninstall_menu,
+)
+from flow.presentation.update_menu import (
+    check_updates as run_update_menu,
+    record_update_check as run_record_update_check,
+    start_background_update_check as run_background_update_check,
+)
 
 
 class FlowCLI:
@@ -66,9 +70,14 @@ class FlowCLI:
         self.update_check_running = False
         self._update_lock = threading.Lock()
         self._tools_status: tuple[bool, bool] | None = None
+        self._last_accessible_progress = -10
 
     def clear(self) -> None:
-        print("\033[2J\033[H", end="", flush=True)
+        mode = getattr(getattr(self, "settings", None), "interface_mode", "compact")
+        if mode == "accessible":
+            print("\n\n", end="", flush=True)
+        else:
+            print("\033[2J\033[H", end="", flush=True)
 
     @contextmanager
     def buffered_screen(self):
@@ -143,6 +152,20 @@ class FlowCLI:
             )
             print(f"{YELLOW}Opción no válida. Usa: {options}.{RESET}")
 
+    def prompt_url(self, prompt: str = "Enlace › ") -> str:
+        if self.settings.clipboard_detection:
+            candidates = clipboard_urls()
+            if candidates:
+                candidate = candidates[0]
+                host = platform_name(candidate)
+                answer = self.read_input(
+                    f"{GREEN}Enlace de {host} detectado en el portapapeles.{RESET} "
+                    f"¿Usarlo? [S/n] › "
+                ).strip().casefold()
+                if answer in {"", "s", "si", "sí", "1"}:
+                    return candidate
+        return self.read_input(prompt).strip()
+
     def dashboard(self) -> None:
         def folder_stats(folder: Path) -> tuple[int, int]:
             try:
@@ -189,6 +212,15 @@ class FlowCLI:
         except HistoryError:
             last_title = "Historial no disponible"
 
+        if self.settings.interface_mode == "accessible":
+            print(f"Videos: {videos} · {format_bytes(video_size)}")
+            print(f"Audios: {audios} · {format_bytes(audio_size)}")
+            print(f"Espacio libre: {format_bytes(free)}")
+            print(tools_label)
+            print(update_label)
+            print(f"Última descarga: {last_title}")
+            return
+
         def row(text: str, color: str = WHITE) -> None:
             print(f"{MAGENTA}│{RESET} {color}{text[:34]:<34}{RESET} {MAGENTA}│{RESET}")
 
@@ -204,6 +236,13 @@ class FlowCLI:
         print(f"{MAGENTA}╰{self.line(36)}╯{RESET}")
 
     def draw_progress(self, percent: float, speed: str, eta: str) -> None:
+        if self.settings.interface_mode == "accessible":
+            step = min(100, int(percent // 10) * 10)
+            if step <= self._last_accessible_progress and percent < 100:
+                return
+            self._last_accessible_progress = step
+            print(f"Progreso {percent:.0f}% · {speed} · restante {eta}")
+            return
         width = 12
         filled = max(0, min(width, round(width * percent / 100)))
         bar = "█" * filled + "░" * (width - filled)
@@ -383,13 +422,12 @@ class FlowCLI:
     def new_download(self) -> None:
         self.logo("NUEVA DESCARGA")
         print(f"{GRAY}Pega un enlace web o escribe 0 para volver.{RESET}")
-        url = self.read_input("Enlace › ").strip()
+        url = self.prompt_url()
 
         if url == "0":
             return
 
-        parsed = urlparse(url)
-        if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
+        if not is_web_url(url):
             print(f"{RED}El enlace no es válido.{RESET}")
             self.pause()
             return
@@ -424,6 +462,7 @@ class FlowCLI:
 
         print(f"\n{YELLOW}Cancelar conservando progreso: c + Enter o Ctrl+C.{RESET}")
         self.download_progress.reset()
+        self._last_accessible_progress = -10
         result = self.service.download(
             media,
             choice,
@@ -634,45 +673,25 @@ class FlowCLI:
         self.pause()
 
     def show_sessions(self) -> None:
-        while True:
-            self.logo("COOKIES Y SESIONES")
-            status = session_status()
-            if status.configured:
-                print(f"{GREEN}✓ Sesión privada configurada{RESET}")
-                print(f"{GRAY}{status.cookies} cookies · {format_bytes(status.size)}{RESET}")
-            else:
-                print(f"{GRAY}No hay cookies importadas.{RESET}")
-            print(f"\n{YELLOW}Nunca pegues contraseñas o tokens directamente en la terminal.{RESET}")
-            self.menu_item("1", "Importar cookies.txt", "formato Netscape exportado por el navegador")
-            self.menu_item("2", "Eliminar sesión privada")
-            self.menu_item("0", "Volver")
-            choice = self.prompt_choice("Selecciona", {"0", "1", "2"})
-            if choice == "0":
-                return
-            if choice == "1":
-                raw_path = self.read_input("Ruta del archivo cookies.txt › ").strip().strip("\"'")
-                try:
-                    imported = import_cookies(Path(raw_path))
-                    print(f"{GREEN}✓ {imported.cookies} cookies guardadas de forma privada.{RESET}")
-                except ValueError as exc:
-                    print(f"{RED}{exc}{RESET}")
-                self.pause()
-            elif choice == "2":
-                confirm = self.prompt_choice("¿Eliminar cookies? [1] Sí  [2] No", {"1", "2"})
-                if confirm == "1":
-                    remove_cookies()
-                    print(f"{GREEN}Sesión eliminada.{RESET}")
-                    self.pause()
+        run_sessions_menu(self)
 
     def read_batch_links(self) -> list[str]:
         print(f"{GRAY}Pega un enlace por línea. Enter vacío inicia la cola.{RESET}")
         urls: list[str] = []
+        if self.settings.clipboard_detection:
+            detected = clipboard_urls()
+            if detected:
+                answer = self.read_input(
+                    f"{GREEN}{len(detected)} enlace(s) detectado(s) en el portapapeles.{RESET} "
+                    "¿Añadirlos? [S/n] › "
+                ).strip().casefold()
+                if answer in {"", "s", "si", "sí", "1"}:
+                    urls.extend(detected)
         while True:
             value = self.read_input(f"Enlace {len(urls) + 1} › ").strip()
             if not value:
                 return list(dict.fromkeys(urls))
-            parsed = urlparse(value)
-            if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
+            if not is_web_url(value):
                 print(f"{YELLOW}Enlace omitido: no es una URL web válida.{RESET}")
                 continue
             urls.append(value)
@@ -710,6 +729,7 @@ class FlowCLI:
 
             print(f"{CYAN}{media.title[:42]}{RESET}")
             self.download_progress.reset()
+            self._last_accessible_progress = -10
             result = self.service.download(
                 media,
                 queue.choice,
@@ -793,7 +813,7 @@ class FlowCLI:
             if choice == "1":
                 self.create_batch(self.read_batch_links())
             elif choice == "2":
-                url = self.read_input("Enlace de playlist › ").strip()
+                url = self.prompt_url("Enlace de playlist › ")
                 try:
                     print(f"{CYAN}Leyendo playlist…{RESET}")
                     urls = self.service.playlist_urls(url)
@@ -812,82 +832,13 @@ class FlowCLI:
                 self.resume_batch()
 
     def show_tools_menu(self) -> None:
-        while True:
-            with self.buffered_screen():
-                self.logo("HERRAMIENTAS")
-                self.menu_item("1", "Cookies y sesiones")
-                self.menu_item("2", "Sistema")
-                self.menu_item("3", "Modo Reparar")
-                self.menu_item("4", "Ajustes")
-                self.menu_item("5", "Pruebas reales")
-                self.menu_item("6", "Desinstalar FlowMobile")
-                self.menu_item("0", "Volver")
-            choice = self.prompt_choice(
-                "Selecciona",
-                {"0", "1", "2", "3", "4", "5", "6"},
-            )
-            if choice == "0":
-                return
-            if choice == "1":
-                self.show_sessions()
-            elif choice == "2":
-                self.show_system()
-            elif choice == "3":
-                self.show_repair()
-            elif choice == "4":
-                self.show_settings()
-            elif choice == "5":
-                self.show_real_tests()
-            elif choice == "6":
-                self.show_uninstall()
+        run_tools_menu(self)
+
+    def show_diagnostic(self) -> None:
+        run_diagnostic_menu(self)
 
     def show_uninstall(self) -> None:
-        self.logo("DESINSTALAR FLOWMOBILE")
-        print(f"{YELLOW}Esta acción elimina el comando flow y el código instalado.{RESET}\n")
-        self.menu_item("1", "Desinstalar y conservar datos", "mantiene descargas, historial, colas y cookies")
-        self.menu_item("2", "Borrar absolutamente todo", "incluye descargas, cookies, colas, historial y ajustes")
-        self.menu_item("0", "Cancelar")
-        choice = self.prompt_choice("Selecciona", {"0", "1", "2"})
-        if choice == "0":
-            return
-        purge_all = choice == "2"
-        if purge_all:
-            print(f"\n{RED}{BOLD}Esta opción no se puede deshacer.{RESET}")
-            confirmation = self.read_input("Escribe BORRAR para continuar › ").strip()
-            if confirmation != "BORRAR":
-                print(f"{GRAY}Desinstalación cancelada.{RESET}")
-                self.pause()
-                return
-        else:
-            confirmation = self.prompt_choice(
-                "¿Desinstalar conservando tus datos? [1] Sí  [2] No",
-                {"1", "2"},
-            )
-            if confirmation == "2":
-                return
-
-        print(f"{CYAN}Eliminando FlowMobile…{RESET}")
-        try:
-            with self._update_lock:
-                result = uninstall(purge_all=purge_all)
-        except (OSError, ValueError) as exc:
-            print(f"{RED}No se pudo completar la desinstalación: {exc}{RESET}")
-            self.pause()
-            return
-        if result.errors:
-            print(f"{YELLOW}FlowMobile se eliminó parcialmente:{RESET}")
-            for error in result.errors[:5]:
-                print(f"{YELLOW}• {error}{RESET}")
-        else:
-            print(f"{GREEN}✓ FlowMobile fue eliminado correctamente.{RESET}")
-        if purge_all:
-            print(f"{GRAY}También se eliminaron todos los datos y descargas.{RESET}")
-        else:
-            print(f"{GRAY}La carpeta del programa también fue eliminada.{RESET}")
-            if result.preserved_at:
-                print(f"{GRAY}Datos para reinstalar: {result.preserved_at}{RESET}")
-        print(f"{GRAY}Cierra esta ventana de terminal. El comando flow ya no estará disponible.{RESET}")
-        raise SystemExit(0)
+        run_uninstall_menu(self)
 
     def show_files(self) -> None:
         self.logo("ARCHIVOS")
@@ -916,203 +867,16 @@ class FlowCLI:
         self.pause()
 
     def record_update_check(self, check: Any) -> tuple[bool, bool, bool, bool]:
-        flow_pending = is_newer(check.flow_latest, APP_VERSION)
-        if flow_pending:
-            self.flow_update_version = check.flow_latest
-            self.flow_release_notes = check.release_notes
-        elif check.flow_latest is not None:
-            self.flow_update_version = None
-            self.flow_release_notes = ()
-        ytdlp_pending = is_newer(check.ytdlp_latest, yt_dlp.version.__version__)
-        ffmpeg_available, ffprobe_available = tools_status()
-        self._tools_status = (ffmpeg_available, ffprobe_available)
-        self.settings.last_update_check = datetime.now().isoformat(timespec="seconds")
-        self.settings.last_update_ok = (
-            not bool(check.error)
-            and check.repository is not None
-            and check.flow_latest is not None
-            and check.ytdlp_latest is not None
-            and ffmpeg_available
-            and ffprobe_available
-            and not flow_pending
-            and not ytdlp_pending
-            and not check.ffmpeg_pending
-        )
-        try:
-            save_settings(self.settings)
-        except OSError:
-            pass
-        return flow_pending, ytdlp_pending, ffmpeg_available, ffprobe_available
+        return run_record_update_check(self, check)
 
     def check_updates(self, force: bool = False, interactive: bool = False) -> None:
-        if not force and not self.settings.auto_updates:
-            return
-        self.logo("COMPROBAR ACTUALIZACIONES")
-        print(f"{CYAN}Revisando FlowMobile y sus herramientas…{RESET}")
-        with self._update_lock:
-            check = check_available_updates()
-            (
-                flow_pending,
-                ytdlp_pending,
-                ffmpeg_available,
-                ffprobe_available,
-            ) = self.record_update_check(check)
-        ffmpeg_pending = check.ffmpeg_pending
-        termux_tools_missing = PLATFORM.is_termux and not (
-            ffmpeg_available and ffprobe_available
-        )
-
-        if check.repository is None:
-            print(f"{YELLOW}! FlowMobile: repositorio de GitHub sin configurar.{RESET}")
-        elif check.flow_latest is None:
-            print(f"{YELLOW}! No se pudo verificar la versión de FlowMobile.{RESET}")
-        elif flow_pending:
-            print(f"{YELLOW}! FlowMobile {check.flow_latest} disponible (actual {APP_VERSION}).{RESET}")
-            print(f"\n{MAGENTA}{BOLD}NOVEDADES DE LA VERSIÓN{RESET}")
-            if check.release_notes:
-                for note in check.release_notes:
-                    print(f"{CYAN}•{RESET} {note}")
-            else:
-                print(f"{GRAY}Hay una nueva versión lista para instalar.{RESET}")
-        else:
-            print(f"{GREEN}✓ FlowMobile {APP_VERSION}{RESET}")
-        if check.ytdlp_latest is None:
-            print(f"{YELLOW}! No se pudo verificar la versión de yt-dlp.{RESET}")
-        elif ytdlp_pending:
-            print(
-                f"{YELLOW}! yt-dlp {check.ytdlp_latest} disponible "
-                f"(actual {yt_dlp.version.__version__}).{RESET}"
-            )
-        else:
-            print(f"{GREEN}✓ yt-dlp {yt_dlp.version.__version__}{RESET}")
-        print(
-            f"{GREEN if ffmpeg_available else YELLOW}"
-            f"{'✓' if ffmpeg_available else '!'} FFmpeg "
-            f"{'disponible' if ffmpeg_available else 'no disponible'}{RESET}"
-        )
-        if ffmpeg_pending:
-            print(f"{YELLOW}! Termux tiene una actualización de FFmpeg disponible.{RESET}")
-        print(
-            f"{GREEN if ffprobe_available else YELLOW}"
-            f"{'✓' if ffprobe_available else '!'} FFprobe "
-            f"{'disponible' if ffprobe_available else 'no disponible'}{RESET}"
-        )
-
-        if check.error:
-            print(f"{YELLOW}No se pudo verificar todo: {check.error[:180]}{RESET}")
-
-        if flow_pending or ytdlp_pending or ffmpeg_pending or termux_tools_missing:
-            print()
-            selected = self.prompt_choice("¿Quieres actualizar ahora? [1] Sí  [2] No", {"1", "2"})
-            if selected == "2":
-                print(f"{GRAY}La actualización se volverá a ofrecer al abrir FlowMobile.{RESET}")
-                self.pause()
-                return
-
-            if ytdlp_pending:
-                print(f"{CYAN}Actualizando yt-dlp y EJS…{RESET}")
-                result = update_ytdlp_package()
-                if result.ok:
-                    print(f"{GREEN}✓ yt-dlp actualizado.{RESET}")
-                else:
-                    print(f"{RED}✗ No se pudo actualizar yt-dlp: {result.detail}{RESET}")
-
-            if ffmpeg_pending or termux_tools_missing:
-                action = "Instalando" if termux_tools_missing else "Actualizando"
-                print(f"{CYAN}{action} FFmpeg desde Termux…{RESET}")
-                result = update_ffmpeg()
-                if result.ok:
-                    print(f"{GREEN}✓ FFmpeg preparado.{RESET}")
-                else:
-                    print(f"{RED}✗ No se pudo preparar FFmpeg: {result.detail}{RESET}")
-
-            if flow_pending and check.repository:
-                print(f"{CYAN}Actualizando FlowMobile…{RESET}")
-                result = update_flowmobile(check.repository)
-                if result.ok:
-                    print(f"{GREEN}✓ FlowMobile actualizado. Vuelve a ejecutar: flow{RESET}")
-                    self.pause()
-                    raise SystemExit(0)
-                print(f"{RED}✗ No se pudo actualizar FlowMobile: {result.detail}{RESET}")
-
-            print(f"{GRAY}Reabre FlowMobile para cargar las herramientas nuevas.{RESET}")
-            self.pause()
-        elif interactive:
-            if ffmpeg_available and ffprobe_available:
-                print(f"\n{GREEN}Todo lo verificable está actualizado.{RESET}")
-            else:
-                print(f"\n{YELLOW}No hay actualizaciones, pero faltan herramientas.{RESET}")
-            if PLATFORM.is_ashell and (not ffmpeg_available or not ffprobe_available):
-                print(f"{GRAY}FFmpeg y FFprobe se actualizan junto con a-Shell.{RESET}")
-            self.pause()
+        run_update_menu(self, force=force, interactive=interactive)
 
     def start_background_update_check(self) -> None:
-        """Comprueba Internet sin impedir que aparezca el menú principal."""
-        if self.update_check_running:
-            return
-        self.update_check_running = True
-
-        def worker() -> None:
-            try:
-                with self._update_lock:
-                    if self.settings.auto_updates:
-                        check = check_available_updates()
-                        self.record_update_check(check)
-                    else:
-                        self._tools_status = tools_status()
-            finally:
-                self.update_check_running = False
-
-        threading.Thread(
-            target=worker,
-            name="flowmobile-update-check",
-            daemon=True,
-        ).start()
+        run_background_update_check(self)
 
     def show_settings(self) -> None:
-        kind_labels = {"ask": "Preguntar siempre", "video": "Video", "audio": "Solo audio"}
-        audio_labels = {"auto": "Automático", "m4a": "M4A", "mp3": "MP3"}
-        while True:
-            self.logo("AJUSTES")
-            quality = (
-                "Mejor disponible"
-                if self.settings.video_quality == "best"
-                else f"Hasta {self.settings.video_quality}p"
-            )
-            self.menu_item("1", "Formato predeterminado", kind_labels[self.settings.default_kind])
-            self.menu_item("2", "Calidad de video", quality)
-            auto_label = "Comprobar al iniciar" if self.settings.auto_updates else "Desactivadas"
-            self.menu_item("3", "Formato de audio", audio_labels[self.settings.audio_format])
-            self.menu_item("4", "Comprobar actualizaciones", auto_label)
-            self.menu_item("0", "Volver")
-            choice = self.prompt_choice("Selecciona", {"0", "1", "2", "3", "4"})
-            if choice == "0":
-                return
-            if choice == "1":
-                print("\n[1] Preguntar siempre  [2] Video  [3] Solo audio")
-                value = self.prompt_choice("Formato", {"1", "2", "3"})
-                self.settings.default_kind = {"1": "ask", "2": "video", "3": "audio"}[value]
-            elif choice == "2":
-                print("\n[1] Mejor  [2] 2160p  [3] 1440p  [4] 1080p")
-                print("[5] 720p   [6] 480p   [7] 360p")
-                value = self.prompt_choice("Calidad máxima", {str(i) for i in range(1, 8)})
-                self.settings.video_quality = {
-                    "1": "best", "2": "2160", "3": "1440", "4": "1080",
-                    "5": "720", "6": "480", "7": "360",
-                }[value]
-            elif choice == "3":
-                print("\n[1] Automático recomendado  [2] M4A  [3] MP3")
-                value = self.prompt_choice("Formato de audio", {"1", "2", "3"})
-                self.settings.audio_format = {"1": "auto", "2": "m4a", "3": "mp3"}[value]
-            elif choice == "4":
-                print("\n[1] Comprobar en cada inicio  [2] Desactivar")
-                value = self.prompt_choice("Actualizaciones", {"1", "2"})
-                self.settings.auto_updates = value == "1"
-            try:
-                save_settings(self.settings)
-            except OSError as exc:
-                print(f"{RED}No se pudieron guardar los ajustes: {exc}{RESET}")
-                self.pause()
+        run_settings_menu(self)
 
     def run(self) -> None:
         self.start_background_update_check()

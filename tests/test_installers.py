@@ -1,11 +1,17 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
+
+from bootstrap_ios import latest_stable_reference
 
 from install_ios import (
     _clean_installations,
+    _copy_preserved,
     _configure_profile,
     _restore_preserved,
+    _valid_installation,
+    install,
 )
 
 
@@ -13,6 +19,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InstallerCompatibilityTests(unittest.TestCase):
+    def test_ios_bootstrap_falls_back_to_main_without_release(self):
+        with patch("bootstrap_ios.urlopen", side_effect=OSError("offline")):
+            self.assertEqual(latest_stable_reference("owner/repository"), "main")
+
     def test_bootstrap_and_launcher_do_not_require_grep(self):
         for relative in ("install.sh", "scripts/flow"):
             content = (ROOT / relative).read_text(encoding="utf-8")
@@ -31,6 +41,11 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertIn("bootstrap_ios.py | python3", bootstrap)
         self.assertNotIn("&& cd", bootstrap)
         self.assertIn("abre una nueva", bootstrap)
+
+    def test_termux_installer_supports_stable_tags(self):
+        installer = (ROOT / "install-termux.sh").read_text(encoding="utf-8")
+        self.assertIn("archive/refs/heads/$BRANCH", installer)
+        self.assertIn("archive/refs/tags/$BRANCH", installer)
 
     def test_ios_bootstrap_requests_latest_installer_from_api(self):
         content = (ROOT / "bootstrap_ios.py").read_text(encoding="utf-8")
@@ -107,6 +122,56 @@ class InstallerCompatibilityTests(unittest.TestCase):
             self.assertFalse(saved.exists())
             self.assertTrue((destination / "Downloads" / "video.mp4").is_file())
             self.assertTrue((destination / ".flowmobile" / "settings.json").is_file())
+
+    def test_ios_update_restores_previous_version_when_dependency_install_fails(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            documents = root / "Documents"
+            app = documents / "FlowMobile"
+            (app / "flow").mkdir(parents=True)
+            (app / "Downloads").mkdir()
+            (app / "main.py").write_text("old-version", encoding="utf-8")
+            (app / "VERSION").write_text("1.0.0", encoding="utf-8")
+            (app / "Downloads" / "keep.mp4").write_bytes(b"keep")
+
+            def fake_source(work_directory):
+                source = work_directory / "new-source"
+                (source / "flow").mkdir(parents=True)
+                (source / "scripts").mkdir()
+                (source / "main.py").write_text("new-version", encoding="utf-8")
+                (source / "VERSION").write_text("2.0.0", encoding="utf-8")
+                (source / "scripts" / "flow_ios.py").write_text("# launcher", encoding="utf-8")
+                return source
+
+            with patch("install_ios._download_source_archive"):
+                with patch("install_ios._safe_extract"):
+                    with patch("install_ios._find_source", side_effect=fake_source):
+                        with patch(
+                            "install_ios._install_python_dependencies",
+                            side_effect=RuntimeError("pip failed"),
+                        ):
+                            with self.assertRaises(RuntimeError):
+                                install("owner/repository", home=root)
+
+            self.assertEqual((app / "main.py").read_text(encoding="utf-8"), "old-version")
+            self.assertTrue((app / "Downloads" / "keep.mp4").is_file())
+            self.assertFalse((documents / ".flowmobile-rollback").exists())
+            self.assertTrue(_valid_installation(app))
+
+    def test_copy_preserved_merges_directories(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            saved = root / "saved"
+            app = root / "app"
+            (saved / ".flowmobile").mkdir(parents=True)
+            (app / ".flowmobile").mkdir(parents=True)
+            (saved / ".flowmobile" / "queue.json").write_text("{}")
+            (app / ".flowmobile" / "settings.json").write_text("{}")
+
+            _copy_preserved(saved, app)
+
+            self.assertTrue((app / ".flowmobile" / "queue.json").is_file())
+            self.assertTrue((app / ".flowmobile" / "settings.json").is_file())
 
 
 if __name__ == "__main__":

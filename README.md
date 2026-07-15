@@ -3,8 +3,11 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.5.3**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.6.0**. El comando de ejecución es `flow` en ambas
 plataformas.
+
+[![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-green.svg)](LICENSE)
 
 ## Instalación en a-Shell
 
@@ -105,6 +108,18 @@ el siguiente inicio.
 - Colas persistentes para varios enlaces y playlists, con reanudación tras cerrar la app.
 - Archivos de cada lote separados dentro de `Downloads/Lotes/<fecha>`.
 - Menú principal compacto; diagnóstico, sesiones y reparación viven en Herramientas.
+- Detección confirmada de enlaces copiados, sin descargar nada sin permiso.
+- Actualización con respaldo automático y restauración si la versión nueva falla.
+- Interfaz accesible sin borrado de pantalla y opción para desactivar colores.
+- Informe de diagnóstico privado preparado para compartir.
+
+## Portapapeles
+
+Al abrir **Nueva descarga**, FlowMobile consulta una sola vez el portapapeles. En
+a-Shell utiliza `pbpaste`; en Termux utiliza `termux-clipboard-get` cuando
+Termux:API está instalado. Si encuentra un enlace muestra únicamente la
+plataforma y pregunta si se quiere usar. Presionar Enter confirma; nunca inicia
+la descarga automáticamente. Se puede desactivar desde **Ajustes → Portapapeles**.
 
 ## Cookies y sesiones privadas
 
@@ -156,6 +171,22 @@ FlowMobile** existen dos opciones:
 En a-Shell también se limpia el bloque administrado dentro de `.profile` y los
 lanzadores antiguos de `Documents/bin`. En Termux solo se elimina el ejecutable
 `flow` cuando se comprueba que pertenece a FlowMobile.
+
+Antes de actualizar se conserva una copia completa de la versión instalada. La
+copia solo se elimina después de validar el código, el lanzador y las
+dependencias nuevas. Si cualquier paso falla, el instalador restaura la versión
+anterior. Las versiones estables se publican en GitHub Releases junto con
+`SHA256SUMS`.
+
+## Diagnóstico y accesibilidad
+
+**Herramientas → Informe de diagnóstico** crea un JSON con versión, plataforma,
+Python, yt-dlp, EJS, FFmpeg, FFprobe y espacio libre. No contiene enlaces,
+cookies, historial ni rutas personales y puede compartirse desde el sistema.
+
+En **Ajustes → Interfaz** se puede elegir el modo accesible, que evita limpiar
+la pantalla y anuncia el progreso por intervalos. Los colores pueden
+desactivarse desde Ajustes o iniciando con `NO_COLOR=1 flow`.
 
 ## Modo Reparar y pruebas reales
 

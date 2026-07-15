@@ -15,6 +15,16 @@ class SettingsTests(unittest.TestCase):
         settings = AppSettings(auto_updates="false").normalize()  # type: ignore[arg-type]
         self.assertTrue(settings.auto_updates)
 
+    def test_invalid_interface_preferences_use_private_safe_defaults(self):
+        settings = AppSettings(
+            clipboard_detection="no",  # type: ignore[arg-type]
+            colors="no",  # type: ignore[arg-type]
+            interface_mode="animated",
+        ).normalize()
+        self.assertTrue(settings.clipboard_detection)
+        self.assertTrue(settings.colors)
+        self.assertEqual(settings.interface_mode, "compact")
+
 class FriendlyErrorTests(unittest.TestCase):
     def test_tiktok_ip_block_recommends_changing_network(self):
         title, hint = friendly_error(

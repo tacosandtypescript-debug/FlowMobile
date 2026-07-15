@@ -21,6 +21,11 @@ class SilentLogger:
         pass
 
 
+def retry_delay(attempt: int) -> float:
+    """Espera exponencial limitada para no bombardear servicios móviles."""
+    return float(min(30, 2 ** max(0, attempt)))
+
+
 def common_options(progress_hook: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
     options: dict[str, Any] = {
         "quiet": True,
@@ -29,9 +34,15 @@ def common_options(progress_hook: Callable[[dict[str, Any]], None]) -> dict[str,
         "logger": SilentLogger(),
         "noplaylist": True,
         "progress_hooks": [progress_hook],
-        "retries": 10,
-        "fragment_retries": 10,
-        "extractor_retries": 5,
+        "retries": 5,
+        "fragment_retries": 5,
+        "extractor_retries": 3,
+        "retry_sleep_functions": {
+            "http": retry_delay,
+            "fragment": retry_delay,
+            "extractor": retry_delay,
+        },
+        "sleep_interval_requests": 0.75,
         "socket_timeout": 30,
         "continuedl": True,
         "nopart": False,

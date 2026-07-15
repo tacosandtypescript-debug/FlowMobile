@@ -1,0 +1,34 @@
+name: Reportar un error
+description: Informar un fallo reproducible sin compartir datos privados
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versión de FlowMobile
+      placeholder: 7.6.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plataforma
+      options:
+        - iOS / a-Shell
+        - Android / Termux
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      description: No incluyas enlaces privados, cookies, tokens ni rutas personales.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Resultado observado y esperado
+    validations:
+      required: true

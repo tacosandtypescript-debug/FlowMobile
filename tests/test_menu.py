@@ -55,10 +55,10 @@ class InteractiveMenuTests(unittest.TestCase):
             error="",
         )
 
-        with patch("flow.presentation.cli.check_available_updates", return_value=check):
-            with patch("flow.presentation.cli.tools_status", return_value=(True, True)):
-                with patch("flow.presentation.cli.save_settings"):
-                    with patch("flow.presentation.cli.threading.Thread") as thread:
+        with patch("flow.presentation.update_menu.check_available_updates", return_value=check):
+            with patch("flow.presentation.update_menu.tools_status", return_value=(True, True)):
+                with patch("flow.presentation.update_menu.save_settings"):
+                    with patch("flow.presentation.update_menu.threading.Thread") as thread:
                         thread.return_value.start.side_effect = (
                             lambda: thread.call_args.kwargs["target"]()
                         )
@@ -73,6 +73,27 @@ class InteractiveMenuTests(unittest.TestCase):
             with self.assertRaises(SystemExit) as exit_context:
                 cli.read_input("Selecciona › ")
         self.assertEqual(exit_context.exception.code, 0)
+
+    def test_clipboard_url_is_used_when_enter_confirms(self):
+        cli = FlowCLI.__new__(FlowCLI)
+        cli.settings = SimpleNamespace(clipboard_detection=True)
+        with patch(
+            "flow.presentation.cli.clipboard_urls",
+            return_value=["https://www.tiktok.com/video/123?private=value"],
+        ):
+            with patch.object(cli, "read_input", return_value="") as read:
+                selected = cli.prompt_url()
+
+        self.assertEqual(selected, "https://www.tiktok.com/video/123?private=value")
+        self.assertNotIn("private=value", read.call_args.args[0])
+
+    def test_accessible_mode_does_not_clear_terminal(self):
+        cli = FlowCLI.__new__(FlowCLI)
+        cli.settings = SimpleNamespace(interface_mode="accessible")
+        output = StringIO()
+        with patch("sys.stdout", output):
+            cli.clear()
+        self.assertNotIn("\033[2J", output.getvalue())
 
     def test_short_quality_list_is_preserved(self):
         values = [1080, 720, 480]

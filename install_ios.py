@@ -22,6 +22,7 @@ DEFAULT_REPOSITORY = "tacosandtypescript-debug/FlowMobile"
 REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 PRESERVED_ITEMS = ("Downloads", ".flowmobile", "flow_settings.json")
 PRESERVED_DATA_NAME = ".flowmobile-data"
+ROLLBACK_NAME = ".flowmobile-rollback"
 PROFILE_START = "# >>> FlowMobile launcher >>>"
 PROFILE_END = "# <<< FlowMobile launcher <<<"
 
@@ -35,6 +36,22 @@ def _download(url: str, destination: Path) -> None:
     request = Request(url, headers={"User-Agent": "FlowMobile-installer"})
     with urlopen(request, timeout=60) as response, destination.open("wb") as output:
         shutil.copyfileobj(response, output)
+
+
+def _download_source_archive(repository: str, reference: str, destination: Path) -> None:
+    candidates = (
+        f"https://github.com/{repository}/archive/refs/heads/{reference}.tar.gz",
+        f"https://github.com/{repository}/archive/refs/tags/{reference}.tar.gz",
+    )
+    last_error: OSError | None = None
+    for url in candidates:
+        try:
+            _download(url, destination)
+            return
+        except OSError as exc:
+            last_error = exc
+            destination.unlink(missing_ok=True)
+    raise RuntimeError(f"No se pudo descargar la referencia {reference}.") from last_error
 
 
 def _safe_extract(archive: Path, destination: Path) -> None:
@@ -100,7 +117,7 @@ def _configure_profile(documents: Path, app_directory: Path) -> None:
             continue
         cleaned.append(line)
 
-    target = str(app_directory / "main.py").replace("'", "'\"'\"'")
+    target = (app_directory / "main.py").as_posix().replace("'", "'\"'\"'")
     content = "\n".join(cleaned).rstrip()
     if content:
         content += "\n\n"
@@ -110,6 +127,29 @@ def _configure_profile(documents: Path, app_directory: Path) -> None:
         f"{PROFILE_END}\n"
     )
     profile.write_text(content, encoding="utf-8")
+
+
+def _remove_profile_configuration(documents: Path) -> None:
+    profile = documents / ".profile"
+    try:
+        previous = profile.read_text(encoding="utf-8")
+    except OSError:
+        return
+    cleaned: list[str] = []
+    inside_flowmobile_block = False
+    for line in previous.splitlines():
+        stripped = line.strip()
+        if stripped == PROFILE_START:
+            inside_flowmobile_block = True
+            continue
+        if stripped == PROFILE_END:
+            inside_flowmobile_block = False
+            continue
+        if inside_flowmobile_block or re.match(r"^\s*alias\s+flow\s*=", line):
+            continue
+        cleaned.append(line)
+    content = "\n".join(cleaned).rstrip()
+    profile.write_text(content + ("\n" if content else ""), encoding="utf-8")
 
 
 def _merge_directory(source: Path, destination: Path) -> None:
@@ -152,6 +192,27 @@ def _restore_preserved(preserved: Path, app_directory: Path) -> None:
             shutil.move(str(source), str(destination))
 
 
+def _copy_preserved(source_directory: Path, app_directory: Path) -> None:
+    if not source_directory.is_dir():
+        return
+    app_directory.mkdir(parents=True, exist_ok=True)
+    for name in PRESERVED_ITEMS:
+        source = source_directory / name
+        destination = app_directory / name
+        if source.is_dir():
+            shutil.copytree(source, destination, dirs_exist_ok=True)
+        elif source.is_file():
+            shutil.copy2(source, destination)
+
+
+def _valid_installation(directory: Path) -> bool:
+    return (
+        (directory / "main.py").is_file()
+        and (directory / "flow").is_dir()
+        and (directory / "VERSION").is_file()
+    )
+
+
 def install(
     repository: str = DEFAULT_REPOSITORY,
     branch: str = "main",
@@ -174,45 +235,67 @@ def install(
     )
     archive = work_directory / "flowmobile.tar.gz"
     preserved = work_directory / "preserved"
+    rollback = documents / ROLLBACK_NAME
 
     print("Instalando FlowMobile para a-Shell…")
     try:
-        _download(
-            f"https://github.com/{repository}/archive/refs/heads/{branch}.tar.gz",
-            archive,
-        )
+        if rollback.exists():
+            if _valid_installation(app_directory):
+                shutil.rmtree(rollback)
+            else:
+                if app_directory.exists():
+                    shutil.rmtree(app_directory)
+                shutil.move(str(rollback), str(app_directory))
+
+        _download_source_archive(repository, branch, archive)
         _safe_extract(archive, work_directory)
         source = _find_source(work_directory)
+        if not _valid_installation(source):
+            raise RuntimeError("La versión descargada no superó la validación previa.")
 
+        legacy_candidates = [
+            documents / PRESERVED_DATA_NAME,
+            documents / "FlowIOS",
+            documents / "FlowApp",
+        ]
         _clean_installations(
-            [
-                documents / PRESERVED_DATA_NAME,
-                app_directory,
-                documents / "FlowIOS",
-                documents / "FlowApp",
-            ],
+            [candidate for candidate in legacy_candidates if candidate != app_directory],
             preserved,
         )
 
         try:
+            if app_directory.exists():
+                shutil.move(str(app_directory), str(rollback))
             shutil.move(str(source), str(app_directory))
+            _copy_preserved(rollback, app_directory)
+            _copy_preserved(preserved, app_directory)
+            (app_directory / ".flowmobile-source").write_text(
+                repository + "\n", encoding="utf-8"
+            )
+            # ios_system reconoce scripts Python por su extensión. El comando corto
+            # se registra como alias en .profile para que funcione desde cualquier
+            # carpeta y no dependa de que a-Shell interprete un archivo sin .py.
+            (bin_directory / "flow").unlink(missing_ok=True)
+            launcher = bin_directory / "flow.py"
+            shutil.copy2(app_directory / "scripts" / "flow_ios.py", launcher)
+            _configure_profile(documents, app_directory)
+            _install_python_dependencies()
+            if not _valid_installation(app_directory):
+                raise RuntimeError("La instalación nueva quedó incompleta.")
         except Exception:
-            _restore_preserved(preserved, app_directory)
+            shutil.rmtree(app_directory, ignore_errors=True)
+            if rollback.exists():
+                shutil.move(str(rollback), str(app_directory))
+                _copy_preserved(preserved, app_directory)
+                _configure_profile(documents, app_directory)
+            else:
+                saved = documents / PRESERVED_DATA_NAME
+                _copy_preserved(preserved, saved)
+                (bin_directory / "flow.py").unlink(missing_ok=True)
+                _remove_profile_configuration(documents)
             raise
-
-        _restore_preserved(preserved, app_directory)
-
-        (app_directory / ".flowmobile-source").write_text(
-            repository + "\n", encoding="utf-8"
-        )
-        # ios_system reconoce scripts Python por su extensión. El comando corto
-        # se registra como alias en .profile para que funcione desde cualquier
-        # carpeta y no dependa de que a-Shell interprete un archivo sin .py.
-        (bin_directory / "flow").unlink(missing_ok=True)
-        launcher = bin_directory / "flow.py"
-        shutil.copy2(app_directory / "scripts" / "flow_ios.py", launcher)
-        _configure_profile(documents, app_directory)
-        _install_python_dependencies()
+        else:
+            shutil.rmtree(rollback, ignore_errors=True)
     finally:
         shutil.rmtree(work_directory, ignore_errors=True)
 

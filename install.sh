@@ -3,7 +3,14 @@ set -eu
 
 REPOSITORY="${1:-${FLOWMOBILE_REPOSITORY:-tacosandtypescript-debug/FlowMobile}}"
 MODE="${2:-}"
-BRANCH="${FLOWMOBILE_BRANCH:-main}"
+BRANCH="${FLOWMOBILE_BRANCH:-}"
+
+if [ -z "$BRANCH" ] && command -v curl >/dev/null 2>&1; then
+    BRANCH=$(curl -fsSL "https://api.github.com/repos/$REPOSITORY/releases/latest" 2>/dev/null \
+        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        | head -n 1) || BRANCH=""
+fi
+BRANCH="${BRANCH:-main}"
 
 case "$REPOSITORY" in
     */*) ;;

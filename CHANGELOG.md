@@ -1,5 +1,18 @@
 # Historial de versiones
 
+## 7.6.0 — 2026-07-15
+
+- Detección confirmada de enlaces del portapapeles mediante `pbpaste` en a-Shell y Termux:API en Android.
+- Lectura del portapapeles limitada a las pantallas de descarga y sin iniciar acciones automáticamente.
+- Reintentos de yt-dlp con espera exponencial y pausa entre solicitudes para reducir bloqueos por exceso de peticiones.
+- Actualizaciones transaccionales con respaldo y restauración automática de la versión anterior.
+- Canal estable basado en GitHub Releases con paquetes ZIP, TAR.GZ y checksums SHA-256.
+- GitHub Actions para Python 3.10, 3.12 y 3.13, instaladores y validación de publicación.
+- Licencia MIT, política de seguridad, guía de contribución e incidencias sin datos privados.
+- Informe de diagnóstico compartible que excluye enlaces, cookies y rutas personales.
+- Interfaz accesible sin limpieza de pantalla, colores opcionales y menú de herramientas separado internamente.
+- Matriz documentada de pruebas reales para instalación, actualización, descarga, compartir y desinstalación.
+
 ## 7.5.3 — 2026-07-15
 
 - La desinstalación con conservación elimina ahora toda la carpeta del programa.

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 import os
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -27,6 +28,7 @@ class UpdateCheck:
     flow_latest: str | None = None
     ytdlp_latest: str | None = None
     repository: str | None = None
+    flow_ref: str | None = None
     release_notes: tuple[str, ...] = ()
     ffmpeg_pending: bool = False
     error: str = ""
@@ -64,6 +66,17 @@ def release_notes_for_version(changelog: str, target_version: str) -> tuple[str,
     return tuple(notes)
 
 
+def release_notes_from_body(body: str) -> tuple[str, ...]:
+    notes: list[str] = []
+    for raw_line in body.splitlines():
+        line = raw_line.strip()
+        if line.startswith(("- ", "* ")):
+            notes.append(line[2:].strip())
+        if len(notes) == 5:
+            break
+    return tuple(note for note in notes if note)
+
+
 def configured_repository() -> str | None:
     environment = (
         os.environ.get("FLOWMOBILE_REPOSITORY", "")
@@ -95,8 +108,6 @@ def check_available_updates(include_package_manager: bool = True) -> UpdateCheck
     check = UpdateCheck(repository=repository)
     errors: list[str] = []
     try:
-        import json
-
         data = json.loads(_read_url("https://pypi.org/pypi/yt-dlp/json"))
         check.ytdlp_latest = str(data.get("info", {}).get("version") or "") or None
     except (OSError, ValueError, URLError) as exc:
@@ -104,20 +115,34 @@ def check_available_updates(include_package_manager: bool = True) -> UpdateCheck
 
     if repository:
         try:
-            check.flow_latest = _read_url(
-                f"https://raw.githubusercontent.com/{repository}/main/VERSION"
+            release = json.loads(
+                _read_url(f"https://api.github.com/repos/{repository}/releases/latest")
             )
-        except (OSError, UnicodeError, URLError) as exc:
-            errors.append(f"FlowMobile: {exc}")
-        if check.flow_latest:
+            tag = str(release.get("tag_name") or "").strip()
+            version_from_tag = tag.removeprefix("v")
+            if tag and _version_parts(version_from_tag):
+                check.flow_latest = version_from_tag
+                check.flow_ref = tag
+                check.release_notes = release_notes_from_body(
+                    str(release.get("body") or "")
+                )
+        except (OSError, UnicodeError, ValueError, URLError):
+            # Repositorios nuevos todavía pueden no tener Releases.
+            pass
+        if not check.flow_latest:
+            try:
+                check.flow_latest = _read_url(
+                    f"https://raw.githubusercontent.com/{repository}/main/VERSION"
+                )
+                check.flow_ref = "main"
+            except (OSError, UnicodeError, URLError) as exc:
+                errors.append(f"FlowMobile: {exc}")
+        if check.flow_latest and not check.release_notes:
             try:
                 changelog = _read_url(
-                    f"https://raw.githubusercontent.com/{repository}/main/CHANGELOG.md"
+                    f"https://raw.githubusercontent.com/{repository}/{check.flow_ref or 'main'}/CHANGELOG.md"
                 )
-                check.release_notes = release_notes_for_version(
-                    changelog,
-                    check.flow_latest,
-                )
+                check.release_notes = release_notes_for_version(changelog, check.flow_latest)
             except (OSError, UnicodeError, URLError):
                 # La versión sigue siendo válida aunque GitHub no entregue las notas.
                 pass
@@ -184,17 +209,17 @@ def update_ytdlp() -> UpdateResult:
     return UpdateResult(False, detail=lines[-1][:220] if lines else "pip devolvió un error.")
 
 
-def update_flowmobile(repository: str) -> UpdateResult:
+def update_flowmobile(repository: str, reference: str = "main") -> UpdateResult:
     if PLATFORM.is_ashell:
         try:
             from install_ios import install
 
-            install(repository)
+            install(repository, reference)
             return UpdateResult(True, changed=True)
         except (OSError, RuntimeError, ValueError) as exc:
             return UpdateResult(False, detail=str(exc))
 
-    url = f"https://raw.githubusercontent.com/{repository}/main/install.sh"
+    url = f"https://raw.githubusercontent.com/{repository}/{reference}/install.sh"
     path: Path | None = None
     try:
         script = _read_url(url, timeout=15)
@@ -206,9 +231,12 @@ def update_flowmobile(repository: str) -> UpdateResult:
         ) as handle:
             handle.write(script)
             path = Path(handle.name)
+        environment = os.environ.copy()
+        environment["FLOWMOBILE_BRANCH"] = reference
         result = subprocess.run(
             ["sh", str(path), repository, "--auto"],
             check=False,
+            env=environment,
         )
         if result.returncode == 0:
             return UpdateResult(True, changed=True)

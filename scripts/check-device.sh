@@ -21,8 +21,19 @@ if [ -z "$PYTHON_COMMAND" ]; then
 fi
 
 echo "FlowMobile $(cat VERSION)"
+test -f main.py
+test -f install_ios.py
+test -f install-termux.sh
+test -f scripts/flow_ios.py
+test ! -d "$(dirname "$PROJECT_DIR")/.flowmobile-rollback"
+FILE_VERSION=$(tr -d '\r\n' < VERSION)
+CODE_VERSION=$($PYTHON_COMMAND -c 'from flow import APP_VERSION; print(APP_VERSION)')
+if [ "$FILE_VERSION" != "$CODE_VERSION" ]; then
+    echo "ERROR: VERSION y el código no coinciden."
+    exit 1
+fi
 echo "Comprobando sintaxis de Python…"
-"$PYTHON_COMMAND" -m compileall -q flow main.py
+"$PYTHON_COMMAND" -m compileall -q flow main.py install_ios.py bootstrap_ios.py scripts/release_notes.py
 
 echo "Comprobando plataforma y yt-dlp…"
 "$PYTHON_COMMAND" -c 'from flow.infrastructure.platform import PLATFORM; import yt_dlp; print(f"{PLATFORM.mobile_os} / {PLATFORM.name} / yt-dlp {yt_dlp.version.__version__}")'

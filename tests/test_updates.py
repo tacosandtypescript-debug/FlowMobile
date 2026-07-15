@@ -6,6 +6,7 @@ from flow.infrastructure.updates import (
     check_available_updates,
     is_newer,
     release_notes_for_version,
+    release_notes_from_body,
     update_ytdlp,
 )
 
@@ -61,6 +62,31 @@ class UpdateTests(unittest.TestCase):
             release_notes_for_version(changelog, "7.3.0"),
             ("Avisos de actualización.", "Sección de novedades."),
         )
+
+    def test_release_body_notes_are_limited_and_clean(self):
+        body = "# Cambios\n\n- Uno\n* Dos\nTexto\n- Tres"
+        self.assertEqual(release_notes_from_body(body), ("Uno", "Dos", "Tres"))
+
+    def test_latest_github_release_is_preferred_over_main(self):
+        def read_url(url):
+            if "pypi.org" in url:
+                return '{"info":{"version":"1"}}'
+            if url.endswith("/releases/latest"):
+                return '{"tag_name":"v8.0.0","body":"- Estable"}'
+            if url.endswith("/CHANGELOG.md"):
+                return ""
+            raise AssertionError(url)
+
+        with patch("flow.infrastructure.updates._read_url", side_effect=read_url):
+            with patch(
+                "flow.infrastructure.updates.configured_repository",
+                return_value="owner/repository",
+            ):
+                result = check_available_updates(include_package_manager=False)
+
+        self.assertEqual(result.flow_latest, "8.0.0")
+        self.assertEqual(result.flow_ref, "v8.0.0")
+        self.assertEqual(result.release_notes, ("Estable",))
 
 
 if __name__ == "__main__":
