@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.6.3**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.6.4**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
@@ -176,6 +176,18 @@ FlowMobile** existen dos opciones:
 En a-Shell también se limpia el bloque administrado dentro de `.profile` y los
 lanzadores antiguos de `Documents/bin`. En Termux solo se elimina el ejecutable
 `flow` cuando se comprueba que pertenece a FlowMobile.
+
+Si una instalación anterior no puede borrarse desde el menú, este limpiador se
+ejecuta fuera de la carpeta del programa, elimina también los datos y verifica
+que no quede ningún residuo de FlowMobile:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/uninstall_ios.py | python3 - BORRAR
+```
+
+Para volver completamente a cero, incluida la copia de `yt-dlp` y `yt-dlp-ejs`
+instalada por FlowMobile, añade `--dependencies` al final. Python, FFmpeg y
+FFprobe forman parte de a-Shell y no se eliminan. Después cierra la ventana.
 
 Antes de actualizar se conserva una copia completa de la versión instalada. La
 copia solo se elimina después de validar el código, el lanzador y las

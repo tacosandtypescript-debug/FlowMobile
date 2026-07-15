@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 7.6.4 — 2026-07-16
+
+- Desinstalador independiente para borrar FlowMobile incluso cuando la aplicación está abierta desde su propia carpeta.
+- Renombrado temporal de la instalación antes de eliminarla para que desaparezca inmediatamente de Documents.
+- Limpieza verificada de código, datos, descargas, reservas, lanzadores, alias y restos de instalaciones antiguas.
+- Opción adicional para retirar `yt-dlp` y `yt-dlp-ejs` y dejar a-Shell preparado para una instalación desde cero.
+- Rutas limitadas estrictamente a Documents y conservación de archivos ajenos al proyecto.
+- Tres pruebas de regresión para confirmación, limpieza completa y protección de rutas externas.
+
 ## 7.6.3 — 2026-07-15
 
 - Activación inmediata del alias `flow` en la sesión actual de a-Shell mediante `ios_system`.

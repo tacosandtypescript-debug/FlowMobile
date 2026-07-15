@@ -4,8 +4,8 @@
 
 - `.gitignore`, `.gitattributes`, `VERSION`, `requirements.txt` y `main.py`.
 - Las carpetas `flow/`, `scripts/` y `tests/` completas.
-- `install.sh`, `install-ios.sh`, `bootstrap_ios.py`, `install_ios.py` e
-  `install-termux.sh`.
+- `install.sh`, `install-ios.sh`, `bootstrap_ios.py`, `install_ios.py`,
+  `uninstall_ios.py` e `install-termux.sh`.
 - `README.md`, `CHANGELOG.md` y `PUBLISHING.md`.
 - `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/` y `.github/`.
 
@@ -42,7 +42,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Activar FlowMobile 7.6.3 en la sesión actual de a-Shell"
+git commit -m "Corregir el borrado total de FlowMobile 7.6.4 en a-Shell"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -68,7 +68,7 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 90
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 93
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
@@ -78,8 +78,8 @@ primero la prueba completa en Termux y después repítela en a-Shell.
 Cuando `main` esté verde y la matriz de `docs/DEVICE_TESTING.md` esté completa:
 
 ```powershell
-git tag -a v7.6.3 -m "FlowMobile 7.6.3"
-git push origin v7.6.3
+git tag -a v7.6.4 -m "FlowMobile 7.6.4"
+git push origin v7.6.4
 ```
 
 La acción `Release` comprueba que la etiqueta coincida con `VERSION`, ejecuta

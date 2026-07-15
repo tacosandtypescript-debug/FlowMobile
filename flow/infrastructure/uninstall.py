@@ -186,6 +186,13 @@ def uninstall(
             if download_directory.name != "FlowMobile":
                 raise ValueError("FlowMobile se negó a borrar una carpeta de descargas no reconocida.")
             _remove_path(download_directory, result)
+        if platform.is_ashell:
+            from uninstall_ios import purge_flowmobile
+
+            cleanup = purge_flowmobile(home=home, app_directory=app_directory)
+            result.removed.extend(cleanup.removed)
+            result.errors.extend(cleanup.errors)
+            return result
         if preserved_directory.exists() or preserved_directory.is_symlink():
             _remove_path(preserved_directory, result)
         _remove_path(app_directory, result)
