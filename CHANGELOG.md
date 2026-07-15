@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 7.3.6 — 2026-07-15
+
+- Orden pública de a-Shell sin operadores `&&` incompatibles con su intérprete.
+- Activación fiable de `flow` al abrir una ventana nueva y cargar `.profile`.
+- Mensaje específico si se intenta añadir `&&` al instalador Python.
+- Instrucciones de instalación limpia verificadas contra el comportamiento real.
+
 ## 7.3.5 — 2026-07-15
 
 - Instalación limpia de iOS que recarga `.profile` en la misma orden pública.

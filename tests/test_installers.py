@@ -25,7 +25,8 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertNotIn("subprocess", content)
         bootstrap = (ROOT / "install.sh").read_text(encoding="utf-8")
         self.assertIn("install_ios.py | python3", bootstrap)
-        self.assertIn("cd && . ./.profile", bootstrap)
+        self.assertNotIn("&& cd", bootstrap)
+        self.assertIn("abre una nueva", bootstrap)
 
     def test_ashell_launcher_is_python(self):
         first_line = (ROOT / "scripts" / "flow_ios.py").read_text(

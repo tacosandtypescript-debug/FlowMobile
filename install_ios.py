@@ -180,7 +180,7 @@ def install(
         shutil.rmtree(work_directory, ignore_errors=True)
 
     print("FlowMobile instalado para iOS.")
-    print("Activa el comando con: cd && . ./.profile")
+    print("Cierra esta ventana y abre una nueva para activar el comando: flow")
     print(f"En esta ventana puedes iniciar con: python3 {app_directory / 'main.py'}")
     return app_directory
 
@@ -188,6 +188,13 @@ def install(
 def main(arguments: list[str] | None = None) -> int:
     values = list(sys.argv[1:] if arguments is None else arguments)
     repository = values[0] if values else DEFAULT_REPOSITORY
+    if len(values) > 1 and values[1].startswith("&"):
+        print(
+            "a-Shell no admite && en la orden de instalación. "
+            "Ejecuta solo el enlace y después abre una ventana nueva.",
+            file=sys.stderr,
+        )
+        return 1
     branch = values[1] if len(values) > 1 else os.environ.get("FLOWMOBILE_BRANCH", "main")
     try:
         install(repository, branch)

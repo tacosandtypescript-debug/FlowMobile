@@ -40,7 +40,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Completar instalación limpia de a-Shell 7.3.5"
+git commit -m "Corregir orden pública de a-Shell 7.3.6"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -76,8 +76,10 @@ primero la prueba completa en Termux y después repítela en a-Shell.
 En a-Shell se usa el instalador Python nativo para evitar `dash`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install_ios.py | python3 - tacosandtypescript-debug/FlowMobile && cd && . ./.profile
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install_ios.py | python3 - tacosandtypescript-debug/FlowMobile
 ```
+
+Al terminar, cierra la ventana de a-Shell, abre una nueva y ejecuta `flow`.
 
 En Termux se usa el instalador de shell:
 

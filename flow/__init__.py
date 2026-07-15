@@ -1,2 +1,2 @@
 APP_NAME = "FlowMobile"
-APP_VERSION = "7.3.5"
+APP_VERSION = "7.3.6"
