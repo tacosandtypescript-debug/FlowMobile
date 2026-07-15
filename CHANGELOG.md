@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.3.8 — 2026-07-15
+
+- El instalador deja de abrir el menú dentro de la tubería de `curl`.
+- Inicio interactivo fiable desde una ventana nueva mediante `flow`.
+- Captura global de entrada cerrada para salir sin mostrar un traceback.
+- Lectura segura aplicada al menú, las pausas y la entrada de enlaces.
+- Prueba de regresión para `EOFError` en a-Shell.
+
 ## 7.3.7 — 2026-07-15
 
 - Bootstrap de iOS que consulta GitHub API y evita instaladores antiguos en caché.

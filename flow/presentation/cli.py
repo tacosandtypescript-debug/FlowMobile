@@ -63,7 +63,17 @@ class FlowCLI:
         print(f"{CYAN}{self.line()}{RESET}")
 
     def pause(self) -> None:
-        input(f"\n{GRAY}Presiona Enter para continuar...{RESET}")
+        self.read_input(f"\n{GRAY}Presiona Enter para continuar...{RESET}")
+
+    def read_input(self, prompt: str) -> str:
+        try:
+            return input(prompt)
+        except EOFError:
+            print(
+                f"\n{YELLOW}La entrada interactiva no está disponible. "
+                f"Abre una ventana nueva de a-Shell y ejecuta flow.{RESET}"
+            )
+            raise SystemExit(0) from None
 
     def menu_item(self, number: str, title: str, detail: str = "") -> None:
         print(f"{CYAN}{BOLD}[{number}]{RESET} {WHITE}{BOLD}{title}{RESET}")
@@ -76,7 +86,9 @@ class FlowCLI:
     def prompt_choice(self, prompt: str, valid: set[str]) -> str:
         normalized = {value.lower() for value in valid}
         while True:
-            choice = input(f"\n{WHITE}{prompt}{RESET} {CYAN}›{RESET} ").strip().lower()
+            choice = self.read_input(
+                f"\n{WHITE}{prompt}{RESET} {CYAN}›{RESET} "
+            ).strip().lower()
             if choice in normalized:
                 return choice
             options = ", ".join(
@@ -325,7 +337,7 @@ class FlowCLI:
     def new_download(self) -> None:
         self.logo("NUEVA DESCARGA")
         print(f"{GRAY}Pega un enlace web o escribe 0 para volver.{RESET}")
-        url = input("Enlace › ").strip()
+        url = self.read_input("Enlace › ").strip()
 
         if url == "0":
             return

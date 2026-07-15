@@ -11,7 +11,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import re
-import runpy
 import shutil
 import sys
 import tarfile
@@ -212,7 +211,7 @@ def install(
         shutil.rmtree(work_directory, ignore_errors=True)
 
     print("FlowMobile instalado para iOS con una copia limpia.")
-    print("Al salir, abre una ventana nueva para usar el comando: flow")
+    print("Abre una ventana nueva de a-Shell y escribe: flow")
     return app_directory
 
 
@@ -228,15 +227,10 @@ def main(arguments: list[str] | None = None) -> int:
         return 1
     branch = values[1] if len(values) > 1 else os.environ.get("FLOWMOBILE_BRANCH", "main")
     try:
-        app_directory = install(repository, branch)
+        install(repository, branch)
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"No se pudo instalar FlowMobile: {exc}", file=sys.stderr)
         return 1
-    entrypoint = app_directory / "main.py"
-    print("Abriendo FlowMobile…")
-    sys.argv = [str(entrypoint)]
-    sys.path.insert(0, str(app_directory))
-    runpy.run_path(str(entrypoint), run_name="__main__")
     return 0
 
 

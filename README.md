@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.3.7**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.3.8**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -21,9 +21,10 @@ ligera de Atajos no incluyen el entorno Python necesario.
 
 El bootstrap consulta la API de GitHub para evitar copias antiguas de caché. El
 instalador elimina el código previo de `FlowMobile`, `FlowApp` y `FlowIOS`, pero
-conserva descargas, historial y ajustes. Al terminar abre FlowMobile
-automáticamente. Para usos posteriores, abre una ventana nueva de a-Shell y
-escribe `flow`. No añadas `sh`, `&&` ni otros comandos al enlace.
+conserva descargas, historial y ajustes. Al terminar, abre una ventana nueva de
+a-Shell y escribe `flow`. El instalador no abre el menú dentro de la tubería de
+`curl`, porque esa entrada ya está cerrada. No añadas `sh`, `&&` ni otros
+comandos al enlace.
 
 ## Instalación en Termux
 

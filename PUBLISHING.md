@@ -41,7 +41,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Instalación limpia y sin caché de a-Shell 7.3.7"
+git commit -m "Corregir entrada interactiva de a-Shell 7.3.8"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -67,7 +67,7 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 35
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 36
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
@@ -80,8 +80,8 @@ En a-Shell se usa el instalador Python nativo para evitar `dash`:
 curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/bootstrap_ios.py | python3 - tacosandtypescript-debug/FlowMobile
 ```
 
-El instalador abre FlowMobile al terminar. Para volver a iniciarlo después,
-abre una ventana nueva de a-Shell y ejecuta `flow`.
+Al terminar, abre una ventana nueva de a-Shell y ejecuta `flow`. El menú no debe
+abrirse desde el proceso conectado a `curl`, porque esa entrada no es interactiva.
 
 En Termux se usa el instalador de shell:
 
