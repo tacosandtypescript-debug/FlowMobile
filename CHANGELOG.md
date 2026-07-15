@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 7.5.2 — 2026-07-15
+
+- Detección específica del bloqueo de dirección IP informado por TikTok.
+- Mensaje claro para cambiar entre Wi-Fi y datos móviles sin repetir intentos inútiles.
+- Aclaración de que las cookies ayudan con sesiones y CAPTCHA, pero no eliminan un bloqueo directo de IP.
+- Prueba de regresión para conservar esta orientación en futuras versiones.
+
 ## 7.5.1 — 2026-07-15
 
 - Desinstalación segura accesible desde Herramientas y ajustes.

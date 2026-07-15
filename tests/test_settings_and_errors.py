@@ -16,6 +16,16 @@ class SettingsTests(unittest.TestCase):
         self.assertTrue(settings.auto_updates)
 
 class FriendlyErrorTests(unittest.TestCase):
+    def test_tiktok_ip_block_recommends_changing_network(self):
+        title, hint = friendly_error(
+            "https://www.tiktok.com/video/1",
+            RuntimeError("Your IP address is blocked from accessing this post"),
+        )
+        self.assertIn("TikTok", title)
+        self.assertIn("IP", title)
+        self.assertIn("Wi-Fi", hint)
+        self.assertIn("datos móviles", hint)
+
     def test_rate_limit_mentions_platform(self):
         title, hint = friendly_error(
             "https://www.tiktok.com/video/1",

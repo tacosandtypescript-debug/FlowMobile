@@ -8,6 +8,20 @@ def friendly_error(url: str, error: Exception) -> tuple[str, str]:
     detail = str(error).strip()
     value = detail.lower()
 
+    if any(
+        term in value
+        for term in (
+            "ip address is blocked",
+            "ip has been blocked",
+            "blocked from accessing this post",
+        )
+    ):
+        return (
+            f"{platform} bloqueó temporalmente la dirección IP de esta red.",
+            "Abre el enlace en Safari con la misma red y resuelve cualquier aviso. "
+            "Si continúa, cambia entre Wi-Fi y datos móviles; las cookies no eliminan "
+            "un bloqueo directo de IP.",
+        )
     if any(term in value for term in ("sign in", "login", "cookie", "cookies")):
         return (
             f"{platform} solicita iniciar sesión.",

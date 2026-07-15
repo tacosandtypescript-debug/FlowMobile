@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.5.1**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.5.2**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -116,6 +116,12 @@ incluyen en el historial, los diagnósticos, las colas ni GitHub.
 
 Las cookies permiten que yt-dlp use una sesión ya iniciada, pero no evitan las
 reglas del sitio. Solo deben importarse cookies propias y no deben compartirse.
+
+Si TikTok indica que la dirección IP está bloqueada, abre primero el enlace en
+Safari desde la misma red y resuelve cualquier inicio de sesión o CAPTCHA. Si el
+bloqueo continúa, cambia entre Wi-Fi y datos móviles antes de volver a intentar.
+Importar cookies recientes puede resolver una sesión, pero no un bloqueo directo
+de la dirección IP.
 
 ## Cancelar, continuar y descargar por lotes
 
