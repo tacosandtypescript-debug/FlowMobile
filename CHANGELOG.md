@@ -1,5 +1,16 @@
 # Historial de versiones
 
+## 7.4.0 — 2026-07-15
+
+- Barra estable con velocidad suavizada, porcentaje y tiempo restante calculado.
+- Aviso sonoro al terminar y notificación opcional en Termux con Termux:API.
+- Buscador del historial por varias palabras y todos sus campos principales.
+- Modo Reparar para Python, yt-dlp, EJS, FFmpeg y FFprobe sin borrar descargas.
+- Limpieza segura de temporales antiguos y conversiones incompletas.
+- Pruebas reales rápida y completa para cinco plataformas, cuatro calidades y dos formatos de audio.
+- Validación mediante FFprobe de resolución, códecs, tamaño y preparación para compartir.
+- Informes de diagnóstico privados que nunca almacenan los enlaces probados.
+
 ## 7.3.8 — 2026-07-15
 
 - El instalador deja de abrir el menú dentro de la tubería de `curl`.

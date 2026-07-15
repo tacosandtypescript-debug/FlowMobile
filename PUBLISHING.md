@@ -41,7 +41,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Corregir entrada interactiva de a-Shell 7.3.8"
+git commit -m "Añadir reparación y pruebas reales 7.4.0"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -67,7 +67,7 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 36
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 48
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.

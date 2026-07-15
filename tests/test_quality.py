@@ -1,5 +1,9 @@
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
+from flow.infrastructure.ffmpeg import probe_media
 from flow.infrastructure.ytdlp_gateway import available_resolutions, estimate_size
 
 
@@ -63,6 +67,24 @@ class QualityDetectionTests(unittest.TestCase):
             ]
         }
         self.assertEqual(estimate_size(info, None, audio_only=True), 4_000)
+
+    def test_ffprobe_reads_real_stream_metadata(self):
+        completed = SimpleNamespace(
+            returncode=0,
+            stdout=(
+                '{"streams":['
+                '{"codec_type":"video","codec_name":"h264","width":1280,"height":720,"r_frame_rate":"30/1"},'
+                '{"codec_type":"audio","codec_name":"aac"}'
+                '],"format":{"duration":"12.5"}}'
+            ),
+        )
+        with patch("flow.infrastructure.ffmpeg.subprocess.run", return_value=completed):
+            with patch.object(Path, "stat", return_value=SimpleNamespace(st_size=1234)):
+                result = probe_media(Path("video.mp4"))
+        self.assertIsNotNone(result)
+        self.assertEqual(result.width, 1280)
+        self.assertEqual(result.audio_codec, "aac")
+        self.assertEqual(result.size, 1234)
 
 
 if __name__ == "__main__":

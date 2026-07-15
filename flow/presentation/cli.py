@@ -3,7 +3,6 @@ from datetime import datetime
 import shutil
 import subprocess
 import sys
-import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -12,14 +11,27 @@ import yt_dlp
 
 from flow import APP_NAME, APP_VERSION
 from flow.application.media_service import MediaService
+from flow.application.real_tests import (
+    full_cases,
+    quick_cases,
+    save_report,
+    verification_dict,
+    verify_download,
+)
 from flow.domain.errors import friendly_error
 from flow.domain.formatting import format_bytes, format_time
 from flow.domain.models import DownloadChoice, MediaInfo
+from flow.domain.progress import DownloadProgress
 from flow.infrastructure.ffmpeg import tools_status
-from flow.infrastructure.history import HistoryError, load_history
-from flow.infrastructure.device import open_share, play_media
+from flow.infrastructure.history import HistoryError, load_history, search_history
+from flow.infrastructure.device import notify_complete, open_share, play_media
 from flow.infrastructure.paths import AUDIO_DIR, VIDEO_DIR
 from flow.infrastructure.platform import PLATFORM
+from flow.infrastructure.repair import (
+    clean_temporary_files,
+    dependency_statuses,
+    repair_dependencies,
+)
 from flow.infrastructure.settings import load_settings, save_settings
 from flow.infrastructure.updates import (
     check_available_updates,
@@ -35,7 +47,7 @@ class FlowCLI:
     def __init__(self) -> None:
         self.service = MediaService()
         self.settings = load_settings()
-        self.progress = {"percent": -1.0, "time": 0.0}
+        self.download_progress = DownloadProgress()
         self.flow_update_version: str | None = None
         self.flow_release_notes: tuple[str, ...] = ()
 
@@ -152,7 +164,7 @@ class FlowCLI:
         print(f"{MAGENTA}╰{self.line(36)}╯{RESET}")
 
     def draw_progress(self, percent: float, speed: str, eta: str) -> None:
-        width = 10
+        width = 12
         filled = max(0, min(width, round(width * percent / 100)))
         bar = "█" * filled + "░" * (width - filled)
         print(
@@ -164,22 +176,14 @@ class FlowCLI:
 
     def progress_hook(self, data: dict[str, Any]) -> None:
         status = data.get("status")
-        now = time.monotonic()
         if status == "downloading":
-            downloaded = data.get("downloaded_bytes") or 0
-            total = data.get("total_bytes") or data.get("total_bytes_estimate") or 0
-            percent = downloaded / total * 100 if total else 0.0
-            if (
-                abs(percent - self.progress["percent"]) < 1.0
-                and now - self.progress["time"] < 0.75
-            ):
+            snapshot = self.download_progress.update(data)
+            if snapshot is None:
                 return
-            self.progress["percent"] = percent
-            self.progress["time"] = now
             self.draw_progress(
-                percent,
-                f"{format_bytes(data.get('speed'))}/s",
-                format_time(data.get("eta")),
+                snapshot.percent,
+                f"{format_bytes(snapshot.speed)}/s",
+                format_time(snapshot.eta),
             )
         elif status == "finished":
             self.draw_progress(100.0, "—", "00:00")
@@ -376,7 +380,7 @@ class FlowCLI:
         if choice is None:
             return
 
-        self.progress = {"percent": -1.0, "time": 0.0}
+        self.download_progress.reset()
         result = self.service.download(
             media,
             choice,
@@ -399,29 +403,44 @@ class FlowCLI:
             print(f"{GRAY}Calidad final verificada:{RESET} {GREEN}{result.quality}{RESET}")
         if result.warning:
             print(f"{YELLOW}Aviso: {result.warning}{RESET}")
+        notify_complete(result.file)
         self.after_download(result.file, choice.kind)
 
+    def print_history(self, history: list[dict[str, Any]]) -> None:
+        if not history:
+            print(f"{GRAY}No se encontraron descargas.{RESET}")
+            return
+        for index, item in enumerate(history[:15], 1):
+            print(f"{GREEN}{index:02d}.{RESET} {(item.get('title') or 'Sin título')[:44]}")
+            print(
+                f"    {GRAY}{item.get('platform', '')} · "
+                f"{item.get('type', '')} · "
+                f"{item.get('resolution') or '—'} · "
+                f"{format_bytes(item.get('size'))}{RESET}"
+            )
+            print(f"    {CYAN}{self.line(34)}{RESET}")
+
     def show_history(self) -> None:
-        self.logo("HISTORIAL")
         try:
             history = load_history()
         except HistoryError as exc:
+            self.logo("HISTORIAL")
             print(f"{RED}{exc}{RESET}")
             self.pause()
             return
-        if not history:
-            print(f"{GRAY}No hay descargas registradas.{RESET}")
-        else:
-            for index, item in enumerate(history[:15], 1):
-                print(f"{GREEN}{index:02d}.{RESET} {(item.get('title') or 'Sin título')[:44]}")
-                print(
-                    f"    {GRAY}{item.get('platform', '')} · "
-                    f"{item.get('type', '')} · "
-                    f"{item.get('resolution') or '—'} · "
-                    f"{format_bytes(item.get('size'))}{RESET}"
-                )
-                print(f"    {CYAN}{self.line(34)}{RESET}")
-        self.pause()
+        while True:
+            self.logo("HISTORIAL")
+            self.print_history(history)
+            print()
+            self.menu_item("1", "Buscar", "por título, sitio, tipo, calidad o fecha")
+            self.menu_item("0", "Volver")
+            choice = self.prompt_choice("Selecciona", {"0", "1"})
+            if choice == "0":
+                return
+            query = self.read_input("Buscar › ").strip()
+            self.logo(f"RESULTADOS: {query[:24] or 'TODOS'}")
+            self.print_history(search_history(query, history))
+            self.pause()
 
     def show_system(self) -> None:
         self.logo("SISTEMA")
@@ -446,6 +465,121 @@ class FlowCLI:
                 print(f"{GRAY}En Termux usa: pkg install ffmpeg{RESET}")
             else:
                 print(f"{GRAY}En a-Shell, actualiza la app para recuperar FFmpeg y FFprobe.{RESET}")
+        self.pause()
+
+    def show_repair(self) -> None:
+        while True:
+            self.logo("MODO REPARAR")
+            print(f"{GRAY}Revisa herramientas sin borrar tus descargas.{RESET}\n")
+            for status in dependency_statuses():
+                mark = "✓" if status.ok else "!"
+                color = GREEN if status.ok else YELLOW
+                print(f"{color}{mark} {status.name:<10}{RESET} {status.detail}")
+            print()
+            self.menu_item("1", "Reparar dependencias", "Python no se reemplaza; repara yt-dlp, EJS y multimedia")
+            self.menu_item("2", "Limpiar temporales dañados", "solo .part, .ytdl, .tmp y conversiones incompletas")
+            self.menu_item("3", "Reparar y limpiar")
+            self.menu_item("0", "Volver")
+            choice = self.prompt_choice("Selecciona", {"0", "1", "2", "3"})
+            if choice == "0":
+                return
+            if choice in {"1", "3"}:
+                print(f"\n{CYAN}Reparando dependencias…{RESET}")
+                for label, result in repair_dependencies():
+                    color, mark = (GREEN, "✓") if result.ok else (RED, "✗")
+                    detail = f" — {result.detail}" if result.detail else ""
+                    print(f"{color}{mark} {label}{RESET}{detail}")
+            if choice in {"2", "3"}:
+                cleaned = clean_temporary_files()
+                print(
+                    f"\n{GREEN}✓ {cleaned.removed} temporales eliminados; "
+                    f"{format_bytes(cleaned.recovered_bytes)} recuperados.{RESET}"
+                )
+                if cleaned.failed:
+                    print(f"{YELLOW}{cleaned.failed} archivos no pudieron eliminarse.{RESET}")
+            print(f"\n{GRAY}Las descargas completas, el historial y los ajustes no se tocaron.{RESET}")
+            self.pause()
+
+    def show_real_tests(self) -> None:
+        self.logo("PRUEBAS REALES")
+        print(f"{YELLOW}Estas pruebas descargan archivos reales y consumen datos.{RESET}")
+        print(f"{GRAY}Usa enlaces públicos propios o que tengas permiso de descargar.{RESET}\n")
+        self.menu_item("1", "Prueba rápida", "un enlace · vídeo 360p y audio M4A")
+        self.menu_item("2", "Prueba completa", "hasta 30 descargas en cinco plataformas")
+        self.menu_item("0", "Volver")
+        mode = self.prompt_choice("Selecciona", {"0", "1", "2"})
+        if mode == "0":
+            return
+
+        targets: list[tuple[str, str]] = []
+        if mode == "1":
+            url = self.read_input("Enlace de prueba › ").strip()
+            if url:
+                targets.append(("Enlace", url))
+            cases = quick_cases()
+        else:
+            print(f"\n{GRAY}Pega un enlace por sitio; Enter lo omite.{RESET}")
+            for site in ("YouTube", "TikTok", "Facebook", "Instagram", "X"):
+                url = self.read_input(f"{site} › ").strip()
+                if url:
+                    targets.append((site, url))
+            cases = full_cases()
+        if not targets:
+            print(f"{YELLOW}No se indicó ningún enlace.{RESET}")
+            self.pause()
+            return
+
+        rows: list[dict[str, object]] = []
+        last_file: Path | None = None
+        for requested_site, url in targets:
+            try:
+                media = self.service.inspect(url)
+            except Exception as exc:
+                title, hint = friendly_error(url, exc)
+                print(f"\n{RED}✗ {requested_site}: {title}{RESET}\n{YELLOW}{hint}{RESET}")
+                rows.append({"platform": requested_site, "case": "análisis", "ok": False, "summary": title})
+                continue
+            print(f"\n{MAGENTA}{BOLD}{media.platform}: {media.title[:34]}{RESET}")
+            for test_case in cases:
+                print(f"{CYAN}Probando {test_case.label}…{RESET}")
+                self.download_progress.reset()
+                result = self.service.download(
+                    media,
+                    test_case.choice,
+                    self.progress_hook,
+                    self.conversion_progress,
+                )
+                if not result.ok or result.file is None:
+                    detail = str(result.error or "error desconocido")[:180]
+                    print(f"{RED}✗ {detail}{RESET}")
+                    rows.append({"platform": media.platform, "case": test_case.label, "ok": False, "summary": detail})
+                    continue
+                checked = verify_download(result.file, test_case.choice)
+                color, mark = (GREEN, "✓") if checked.ok else (RED, "✗")
+                print(
+                    f"{color}{mark} {checked.summary}{RESET} · "
+                    f"{format_bytes(checked.size)} · compartir {'OK' if checked.share_ready else 'NO'}"
+                )
+                rows.append({
+                    "platform": media.platform,
+                    "case": test_case.label,
+                    **verification_dict(checked),
+                })
+                if checked.ok:
+                    last_file = result.file
+
+        report = save_report(rows)
+        passed = sum(bool(row.get("ok")) for row in rows)
+        print(f"\n{MAGENTA}{BOLD}RESULTADO: {passed}/{len(rows)} correctas{RESET}")
+        print(f"{GRAY}Informe privado: {report}{RESET}")
+        if last_file is not None:
+            print(f"\n{CYAN}[1]{RESET} Abrir Compartir con el último archivo")
+            print(f"{RED}[0]{RESET} Volver")
+            if self.prompt_choice("Verificación final", {"0", "1"}) == "1":
+                if open_share(last_file):
+                    print(f"{GREEN}✓ Vista Compartir abierta. Confirma visualmente el archivo.{RESET}")
+                else:
+                    print(f"{RED}✗ El dispositivo no pudo abrir la vista Compartir.{RESET}")
         self.pause()
 
     def show_files(self) -> None:
@@ -662,10 +796,15 @@ class FlowCLI:
             self.section("CONFIGURACIÓN")
             self.menu_item("5", "Sistema", "estado de Python, yt-dlp y FFmpeg")
             self.menu_item("6", "Ajustes", "formato y calidad predeterminados")
+            self.menu_item("7", "Modo Reparar", "dependencias y temporales dañados")
+            self.menu_item("8", "Pruebas reales", "calidad, códecs, tamaño y compartir")
             print()
             self.menu_item("0", "Salir")
 
-            choice = self.prompt_choice("Selecciona", {"0", "1", "2", "3", "4", "5", "6"})
+            choice = self.prompt_choice(
+                "Selecciona",
+                {"0", "1", "2", "3", "4", "5", "6", "7", "8"},
+            )
             if choice == "1":
                 self.new_download()
             elif choice == "2":
@@ -678,6 +817,10 @@ class FlowCLI:
                 self.show_system()
             elif choice == "6":
                 self.show_settings()
+            elif choice == "7":
+                self.show_repair()
+            elif choice == "8":
+                self.show_real_tests()
             elif choice == "0":
                 self.clear()
                 print("FlowMobile cerrado.")

@@ -2,9 +2,21 @@ from __future__ import annotations
 from pathlib import Path
 from functools import lru_cache
 from collections import deque
+from dataclasses import dataclass
 import json
 import subprocess
 from typing import Callable
+
+
+@dataclass(frozen=True, slots=True)
+class MediaProbe:
+    size: int
+    duration: float | None
+    width: int | None
+    height: int | None
+    fps: float | None
+    video_codec: str | None
+    audio_codec: str | None
 
 
 @lru_cache(maxsize=None)
@@ -39,6 +51,57 @@ def tools_status() -> tuple[bool, bool]:
     return command_available("ffmpeg"), command_available("ffprobe")
 
 
+def probe_media(source: Path) -> MediaProbe | None:
+    """Comprueba estructura, códecs, duración y resolución del archivo real."""
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error", "-show_entries",
+                "stream=codec_type,codec_name,width,height,r_frame_rate:format=duration",
+                "-of", "json", str(source),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            return None
+        payload = json.loads(result.stdout)
+        streams = payload.get("streams") or []
+        video = next(
+            (stream for stream in streams if stream.get("codec_type") == "video"),
+            {},
+        )
+        audio = next(
+            (stream for stream in streams if stream.get("codec_type") == "audio"),
+            {},
+        )
+        rate = str(video.get("r_frame_rate") or "")
+        fps: float | None = None
+        if "/" in rate:
+            numerator, denominator = rate.split("/", 1)
+            try:
+                fps = float(numerator) / float(denominator)
+            except (ValueError, ZeroDivisionError):
+                pass
+        raw_duration = (payload.get("format") or {}).get("duration")
+        try:
+            duration = float(raw_duration) if raw_duration is not None else None
+        except (TypeError, ValueError):
+            duration = None
+        return MediaProbe(
+            size=source.stat().st_size,
+            duration=duration,
+            width=video.get("width") if isinstance(video.get("width"), int) else None,
+            height=video.get("height") if isinstance(video.get("height"), int) else None,
+            fps=fps,
+            video_codec=str(video.get("codec_name")) if video.get("codec_name") else None,
+            audio_codec=str(audio.get("codec_name")) if audio.get("codec_name") else None,
+        )
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+
+
 def is_ios_compatible(source: Path) -> bool:
     """Comprueba si un MP4 ya usa H.264 y audio AAC (o no tiene audio)."""
     if source.suffix.lower() not in {".mp4", ".m4v", ".mov"}:
@@ -69,41 +132,15 @@ def is_ios_compatible(source: Path) -> bool:
 
 def media_quality(source: Path) -> str | None:
     """Lee la calidad real del archivo final mediante FFprobe."""
-    try:
-        result = subprocess.run(
-            [
-                "ffprobe", "-v", "error", "-select_streams", "v:0",
-                "-show_entries", "stream=width,height,r_frame_rate,codec_name",
-                "-of", "json", str(source),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            return None
-        streams = json.loads(result.stdout).get("streams", [])
-        if not streams:
-            return None
-        stream = streams[0]
-        width, height = stream.get("width"), stream.get("height")
-        if not isinstance(width, int) or not isinstance(height, int):
-            return None
-        parts = [f"{width}×{height}"]
-        rate = str(stream.get("r_frame_rate") or "")
-        if "/" in rate:
-            numerator, denominator = rate.split("/", 1)
-            try:
-                fps = float(numerator) / float(denominator)
-                parts.append(f"{fps:g} fps")
-            except (ValueError, ZeroDivisionError):
-                pass
-        codec = stream.get("codec_name")
-        if codec:
-            parts.append(str(codec).upper())
-        return " · ".join(parts)
-    except (OSError, ValueError):
+    probe = probe_media(source)
+    if probe is None or probe.width is None or probe.height is None:
         return None
+    parts = [f"{probe.width}×{probe.height}"]
+    if probe.fps is not None:
+        parts.append(f"{probe.fps:g} fps")
+    if probe.video_codec:
+        parts.append(probe.video_codec.upper())
+    return " · ".join(parts)
 
 
 def convert_video(

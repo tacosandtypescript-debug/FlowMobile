@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.3.8**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.4.0**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -91,6 +91,25 @@ el siguiente inicio.
 - Panel de almacenamiento, preferencias y mensajes por plataforma.
 - Menú agrupado por tareas y selector compacto con acceso a todas las calidades.
 - Instalador y lanzador Python nativos para los comandos internos de a-Shell.
+- Barra de progreso suavizada con porcentaje, velocidad y tiempo restante.
+- Aviso sonoro al terminar y notificación nativa opcional mediante Termux:API.
+- Buscador del historial por título, sitio, tipo, calidad o fecha.
+- Modo Reparar para revisar dependencias y retirar únicamente temporales dañados.
+- Pruebas reales guiadas para 360p, 720p, 1080p, máxima calidad, M4A y MP3.
+- Informes privados con resolución, códecs, tamaño y disponibilidad para compartir.
+
+## Modo Reparar y pruebas reales
+
+La opción **7 · Modo Reparar** comprueba Python, yt-dlp, EJS, FFmpeg y
+FFprobe. Puede reinstalar las dependencias compatibles con el dispositivo y
+limpiar archivos `.part`, `.ytdl`, `.tmp` o conversiones incompletas con más de
+cinco minutos. No elimina vídeos, audios, historial ni ajustes.
+
+La opción **8 · Pruebas reales** ofrece una prueba rápida y una matriz completa.
+La completa admite un enlace de YouTube, TikTok, Facebook, Instagram y X, y
+prueba vídeo 360p, 720p, 1080p, máxima calidad, audio M4A y MP3. Los enlaces no
+se escriben en el informe. La comprobación final de Compartir siempre requiere
+confirmación de la persona, porque abre la interfaz del sistema.
 
 ## Desarrollo y pruebas
 

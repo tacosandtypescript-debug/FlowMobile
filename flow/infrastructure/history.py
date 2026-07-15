@@ -23,6 +23,25 @@ def load_history() -> list[dict[str, Any]]:
     return [item for item in data if isinstance(item, dict)]
 
 
+def search_history(
+    query: str,
+    history: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    words = [word.casefold() for word in query.split() if word.strip()]
+    if not words:
+        return history if history is not None else load_history()
+    entries = history if history is not None else load_history()
+    searchable_fields = ("title", "platform", "type", "resolution", "date", "file")
+    return [
+        item
+        for item in entries
+        if all(
+            word in " ".join(str(item.get(field) or "") for field in searchable_fields).casefold()
+            for word in words
+        )
+    ]
+
+
 def save_history(entry: dict[str, Any]) -> None:
     history = load_history()
     history.insert(0, entry)
