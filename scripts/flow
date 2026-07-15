@@ -1,0 +1,19 @@
+#!/bin/sh
+if [ -n "${TERMUX_VERSION:-}" ] || printf '%s' "${PREFIX:-}" | grep -q 'com.termux'; then
+    APP_DIR="${FLOWMOBILE_HOME:-$HOME/FlowMobile}"
+else
+    DOCUMENTS="$HOME"
+    case "$DOCUMENTS" in
+        */Documents) ;;
+        *) DOCUMENTS="$HOME/Documents" ;;
+    esac
+    APP_DIR="${FLOWMOBILE_HOME:-$DOCUMENTS/FlowMobile}"
+fi
+
+if [ ! -f "$APP_DIR/main.py" ]; then
+    echo "FlowMobile no está instalado en $APP_DIR"
+    echo "Vuelve a ejecutar el instalador de FlowMobile."
+    exit 1
+fi
+
+exec python3 "$APP_DIR/main.py" "$@"

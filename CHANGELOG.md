@@ -1,0 +1,101 @@
+# Historial de versiones
+
+## 7.3.1 — 2026-07-15
+
+- `.gitignore` separado por datos privados, Python, temporales y editor.
+- Protección adicional para cookies, sesiones, variables y secretos locales.
+- Exclusión de carpetas locales de Codex y editores de código.
+- Lista documentada de los archivos que sí deben publicarse en GitHub.
+- Advertencia para retirar del índice cualquier archivo privado ya registrado.
+
+## 7.3.0 — 2026-07-15
+
+- Nueva sección Novedades dentro del menú principal.
+- Aviso destacado cuando GitHub contiene una versión más reciente.
+- Presentación de hasta cinco cambios publicados en `CHANGELOG.md`.
+- La notificación permanece visible cuando la actualización se pospone.
+- Las actualizaciones continúan requiriendo confirmación antes de instalarse.
+
+## 7.2.0 — 2026-07-15
+
+- Un único enlace de instalación para Android y iPhone/iPad.
+- Detección del dispositivo con confirmación interactiva desde la terminal.
+- Elección manual entre Termux y a-Shell cuando la detección no sea correcta.
+- Descarga automática del instalador específico para la plataforma elegida.
+- Modo `--auto` para actualizaciones e instalaciones sin preguntas.
+- Limpieza automática del instalador temporal incluso cuando ocurre un error.
+
+## 7.1.0 — 2026-07-15
+
+- Menú principal agrupado en Descargas, Biblioteca y FlowMobile.
+- Estado superior real de FFmpeg y FFprobe en lugar de mostrar siempre “listo”.
+- Selector compacto que destaca la mejor calidad detectada y permite ver todas.
+- Estimaciones de audio separadas del tamaño del vídeo y formatos DRM ocultos.
+- Regreso directo desde la pantalla de enlace escribiendo `0`.
+- Mensajes de actualización y reparación diferentes para a-Shell y Termux.
+- Instalación ofrecida cuando FFmpeg falta en Termux.
+- Prevención de bloqueos durante conversiones largas con FFmpeg.
+- Recuperación automática en Termux si Android pierde el acceso compartido.
+- Validación más segura de rutas descargadas y ajustes booleanos.
+
+## 7.0.0 — 2026-07-15
+
+- El proyecto pasa a llamarse FlowMobile.
+- Compatibilidad oficial con a-Shell en iOS y Termux en Android.
+- Detección automática de plataforma.
+- Instaladores separados y un enlace de instalación común.
+- Comando `flow` disponible en ambas plataformas.
+- Descargas públicas de Android separadas del código privado.
+- Compartir y reproducir mediante las herramientas nativas de cada sistema.
+- Estado privado `.flowmobile` con migración de ajustes e historial anteriores.
+- Comprobación de actualizaciones de FFmpeg mediante paquetes de Termux.
+- Dependencias de yt-dlp adaptadas a cada entorno.
+
+## 6.6.0 — 2026-07-15
+
+- La aplicación adopta el nombre FlowIOS.
+- Instalador de GitHub preparado para a-Shell.
+- Nuevo comando global `flow` dentro de `Documents/bin`.
+- Conservación de descargas y ajustes durante reinstalaciones.
+- Verificación de FlowIOS y yt-dlp en cada inicio.
+- Confirmación obligatoria antes de instalar actualizaciones.
+- Verificación de disponibilidad de FFmpeg y FFprobe.
+- Archivo `VERSION` para comprobar publicaciones remotas.
+- Guía de publicación y enlace de instalación preparados.
+
+## 6.5.0 iOS — 2026-07-14
+
+- Nueva paleta visual con colores semánticos e iconos consistentes.
+- Panel principal con espacio libre, videos, audios y última descarga.
+- Estado conjunto de yt-dlp, FFmpeg y FFprobe.
+- Actualización automática diaria de yt-dlp mediante pip.
+- Actualización conjunta de los scripts EJS requeridos por yt-dlp y YouTube.
+- Control para activar o desactivar actualizaciones automáticas.
+- Registro del resultado de la última comprobación.
+- FFmpeg y FFprobe identificados como herramientas gestionadas por a-Shell.
+
+## 6.4.0 iOS — 2026-07-14
+
+- Ajustes persistentes de formato, calidad de video y formato de audio.
+- Selección oficial de la mejor fuente de video y audio mediante yt-dlp.
+- Límites de resolución correctos para videos horizontales y verticales.
+- Lista de calidades detectadas antes de descargar.
+- Verificación con FFprobe de resolución, FPS y códec del archivo final.
+- Mensajes específicos para restricciones, enlaces y errores de cada plataforma.
+
+## 6.3.0 iOS — 2026-07-14
+
+- Menú principal más claro, validado y adaptado a a-Shell.
+- Opción de solo audio destacada como primera alternativa.
+- Extracción de audio real a M4A o MP3 mediante FFmpeg.
+- Detección de FFmpeg compatible con los comandos internos de a-Shell.
+- Conservación del archivo original cuando una conversión falla.
+- Opción final para compartir o guardar videos y audios desde iOS.
+- Vista de archivos recientes y estado de herramientas.
+- Escritura segura del historial y protección de datos privados.
+- Mejor validación de enlaces, plataformas, tamaños y duraciones.
+- Pruebas básicas para dominio y conversión de audio.
+
+## 6.2 iOS
+
+- Versión base de Flow Media para iOS.

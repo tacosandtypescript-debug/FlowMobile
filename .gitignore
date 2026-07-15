@@ -1,0 +1,75 @@
+# ------------------------------------------------------------
+# DATOS PRIVADOS DE FLOWMOBILE — nunca subir a GitHub
+# ------------------------------------------------------------
+/Downloads/
+/.flowmobile/
+/flow_settings.json
+/.flowmobile-source
+/.flowios-source
+
+# Cookies o sesiones utilizadas por yt-dlp.
+/cookies.txt
+/cookies-*.txt
+/*.cookies
+/.netrc
+
+# Variables locales, tokens y secretos.
+/.env
+/.env.*
+!/.env.example
+/.git-credentials
+/.pypirc
+/.npmrc
+/.ssh/
+/id_rsa*
+/id_ed25519*
+*.key
+*.pem
+*.p12
+*.pfx
+
+# ------------------------------------------------------------
+# PYTHON — archivos generados, entornos y resultados de pruebas
+# ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+/.pytest_cache/
+/.mypy_cache/
+/.ruff_cache/
+/.coverage
+/htmlcov/
+/.venv/
+/venv/
+/env/
+/build/
+/dist/
+
+# ------------------------------------------------------------
+# DESCARGAS INCOMPLETAS, REGISTROS Y TEMPORALES
+# ------------------------------------------------------------
+*.part
+*.ytdl
+*.tmp
+*.log
+*.bak
+*.orig
+*.swp
+*.swo
+*~
+/release/
+/FlowMobile-*.zip
+
+# ------------------------------------------------------------
+# CONFIGURACIÓN LOCAL DEL EDITOR Y DEL EQUIPO
+# ------------------------------------------------------------
+/.codex/
+/.agents/
+/.vscode/
+/.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+*:Zone.Identifier

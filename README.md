@@ -1,0 +1,91 @@
+# FlowMobile
+
+Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
+iOS** y **Termux en Android**.
+
+Versión actual: **7.3.1**. El comando de ejecución es `flow` en ambas
+plataformas.
+
+## Instalación en a-Shell
+
+Enlace público del repositorio oficial:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
+```
+
+## Instalación en Termux
+
+Usa una versión actual de Termux procedente de GitHub o F-Droid. Después ejecuta:
+
+```sh
+pkg install -y curl
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
+```
+
+El mismo enlace detecta el sistema y pregunta si se instalará en **Android con
+Termux** o en **iPhone/iPad con a-Shell**. Pulsar Enter acepta el dispositivo
+detectado. Después descarga el instalador correcto y prepara automáticamente
+Python, FFmpeg y `yt-dlp` donde corresponda. En Android también solicita acceso
+a Descargas.
+
+Para instalaciones automáticas sin preguntas se puede añadir `--auto`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile --auto
+```
+
+Después se puede iniciar desde cualquier carpeta:
+
+```sh
+flow
+```
+
+## Archivos y privacidad
+
+- a-Shell guarda las descargas dentro de `FlowMobile/Downloads`.
+- Termux guarda el programa en `$HOME/FlowMobile`.
+- En Android, si se concedió el permiso, los archivos se guardan en
+  `Download/FlowMobile`; de lo contrario se usa una carpeta privada.
+- Historial y ajustes se guardan en `.flowmobile`, fuera de las descargas
+  públicas.
+- El instalador conserva descargas, historial y ajustes durante actualizaciones.
+
+## Actualizaciones
+
+En cada inicio, FlowMobile comprueba:
+
+- la versión de FlowMobile publicada en GitHub;
+- la versión estable de `yt-dlp` y sus componentes EJS;
+- disponibilidad de FFmpeg y FFprobe;
+- en Termux, actualizaciones del paquete FFmpeg.
+
+Si encuentra cambios, muestra las versiones y pregunta antes de instalarlos.
+En a-Shell, FFmpeg se actualiza junto con la aplicación; en Termux se administra
+mediante `pkg`.
+
+Cuando se publica una versión nueva, el menú muestra una sección **Novedades**
+con el número de versión y hasta cinco cambios tomados de `CHANGELOG.md`. Si la
+persona decide esperar, el aviso permanece disponible y vuelve a mostrarse en
+el siguiente inicio.
+
+## Funciones
+
+- Mejor fuente de video y audio detectada por `yt-dlp`.
+- Calidades desde 360p hasta 2160p.
+- Audio automático, M4A o MP3.
+- Verificación final de resolución, FPS y códec.
+- Historial, archivos recientes y menú para compartir.
+- Rutas, reproducción y compartir adaptados a iOS o Android.
+- Panel de almacenamiento, preferencias y mensajes por plataforma.
+- Menú agrupado por tareas y selector compacto con acceso a todas las calidades.
+
+## Desarrollo y pruebas
+
+```sh
+python3 -m pip install -r requirements.txt
+python3 main.py
+python3 -m unittest discover -s tests -v
+```
+
+Cada publicación debe actualizar `VERSION`, `APP_VERSION` y `CHANGELOG.md`.
