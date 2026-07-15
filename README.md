@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.3.4**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.3.5**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -11,7 +11,7 @@ plataformas.
 Enlace público del repositorio oficial:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install_ios.py | python3 - tacosandtypescript-debug/FlowMobile
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install_ios.py | python3 - tacosandtypescript-debug/FlowMobile && cd && . ./.profile
 ```
 
 Se requiere la aplicación **a-Shell completa** abierta directamente. El
@@ -20,8 +20,9 @@ puede acceder a los comandos internos de a-Shell. a-Shell mini y la extensión
 ligera de Atajos no incluyen el entorno Python necesario.
 
 El instalador reemplaza aliases antiguos que todavía apunten a `FlowApp` o
-`FlowIOS`. Si el alias anterior sigue cargado en la ventana actual, ejecuta una
-vez `unalias flow` o abre una ventana nueva antes de escribir `flow`.
+`FlowIOS`. La parte final `cd && . ./.profile` activa inmediatamente el alias
+correcto, por lo que `flow` funciona sin cerrar a-Shell. También se puede iniciar
+directamente con `python3 FlowMobile/main.py`.
 
 ## Instalación en Termux
 

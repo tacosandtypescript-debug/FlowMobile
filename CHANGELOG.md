@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.3.5 — 2026-07-15
+
+- Instalación limpia de iOS que recarga `.profile` en la misma orden pública.
+- Comando `flow` disponible inmediatamente sin cerrar y volver a abrir a-Shell.
+- Eliminación del lanzador sin extensión que ios_system no reconocía.
+- Lanzador auxiliar guardado correctamente como `flow.py`.
+- Mensajes de instalación específicos para el comportamiento real de a-Shell.
+
 ## 7.3.4 — 2026-07-15
 
 - Limpieza automática de aliases `flow` que todavía apuntaban a `FlowApp`.

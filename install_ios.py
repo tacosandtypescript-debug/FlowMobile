@@ -168,17 +168,20 @@ def install(
         (app_directory / ".flowmobile-source").write_text(
             repository + "\n", encoding="utf-8"
         )
-        launcher = bin_directory / "flow"
+        # ios_system reconoce scripts Python por su extensión. El comando corto
+        # se registra como alias en .profile para que funcione desde cualquier
+        # carpeta y no dependa de que a-Shell interprete un archivo sin .py.
+        (bin_directory / "flow").unlink(missing_ok=True)
+        launcher = bin_directory / "flow.py"
         shutil.copy2(app_directory / "scripts" / "flow_ios.py", launcher)
-        launcher.chmod(launcher.stat().st_mode | 0o111)
         _configure_profile(documents, app_directory)
         _install_python_dependencies()
     finally:
         shutil.rmtree(work_directory, ignore_errors=True)
 
     print("FlowMobile instalado para iOS.")
-    print("Si flow apuntaba a FlowApp, ejecuta una vez: unalias flow")
-    print("Después escribe: flow")
+    print("Activa el comando con: cd && . ./.profile")
+    print(f"En esta ventana puedes iniciar con: python3 {app_directory / 'main.py'}")
     return app_directory
 
 
