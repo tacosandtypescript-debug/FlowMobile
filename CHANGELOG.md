@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 7.4.2 — 2026-07-15
+
+- Panel principal renderizado como un único fotograma de terminal en a-Shell.
+- Eliminación del efecto de líneas dibujadas una por una en iPhone y iPad.
+- FFmpeg y FFprobe dejan de bloquear la primera aparición del menú.
+- Estado temporal «Verificando sistema» mientras termina la detección secundaria.
+- La comprobación de herramientas funciona incluso con actualizaciones automáticas desactivadas.
+- Pruebas para el renderizado agrupado y el arranque sin procesos multimedia.
+
 ## 7.4.1 — 2026-07-15
 
 - El menú principal aparece inmediatamente sin esperar consultas de Internet.

@@ -1,5 +1,7 @@
 from __future__ import annotations
+from contextlib import contextmanager, redirect_stdout
 from datetime import datetime
+from io import StringIO
 import os
 import shutil
 import subprocess
@@ -54,19 +56,33 @@ class FlowCLI:
         self.flow_release_notes: tuple[str, ...] = ()
         self.update_check_running = False
         self._update_lock = threading.Lock()
+        self._tools_status: tuple[bool, bool] | None = None
 
     def clear(self) -> None:
         print("\033[2J\033[H", end="", flush=True)
+
+    @contextmanager
+    def buffered_screen(self):
+        """Entrega la pantalla en un solo bloque para evitar tirones en a-Shell."""
+        buffer = StringIO()
+        with redirect_stdout(buffer):
+            yield
+        sys.stdout.write(buffer.getvalue())
+        sys.stdout.flush()
 
     def line(self, width: int = 38) -> str:
         return "─" * width
 
     def logo(self, title: str) -> None:
         self.clear()
-        ffmpeg_available, ffprobe_available = tools_status()
-        tools_ok = ffmpeg_available and ffprobe_available
-        status_color = GREEN if tools_ok else YELLOW
-        status_label = "SISTEMA LISTO" if tools_ok else "REVISAR HERRAMIENTAS"
+        current_tools = self._tools_status
+        tools_ok = bool(current_tools and all(current_tools))
+        if current_tools is None:
+            status_color, status_label = CYAN, "VERIFICANDO SISTEMA"
+        elif tools_ok:
+            status_color, status_label = GREEN, "SISTEMA LISTO"
+        else:
+            status_color, status_label = YELLOW, "REVISAR HERRAMIENTAS"
         print(f"{MAGENTA}{BOLD}{APP_NAME}{RESET}")
         print(f"{GRAY}{PLATFORM.mobile_os} · {PLATFORM.name} · v{APP_VERSION}{RESET}")
         print(f"{CYAN}{self.line()}{RESET}")
@@ -137,9 +153,14 @@ class FlowCLI:
             free = shutil.disk_usage(VIDEO_DIR).free
         except OSError:
             free = 0
-        ffmpeg_available, ffprobe_available = tools_status()
-        tools_ok = ffmpeg_available and ffprobe_available
-        tools_label = "✓ Herramientas listas" if tools_ok else "! Revisar herramientas"
+        current_tools = self._tools_status
+        tools_ok = bool(current_tools and all(current_tools))
+        if current_tools is None:
+            tools_label, tools_color = "○ Verificando herramientas", CYAN
+        elif tools_ok:
+            tools_label, tools_color = "✓ Herramientas listas", GREEN
+        else:
+            tools_label, tools_color = "! Revisar herramientas", YELLOW
         if not self.settings.auto_updates:
             update_label, update_color = "○ Actualización manual", GRAY
         elif self.update_check_running:
@@ -168,7 +189,7 @@ class FlowCLI:
         row(f"▸ Videos  {videos:>3}  {format_bytes(video_size):>10}", CYAN)
         row(f"▸ Audios  {audios:>3}  {format_bytes(audio_size):>10}", GREEN)
         row(f"▸ Libre         {format_bytes(free):>10}", WHITE)
-        row(tools_label, GREEN if tools_ok else YELLOW)
+        row(tools_label, tools_color)
         row(update_label, update_color)
         row(f"Última: {last_title}", GRAY)
         print(f"{MAGENTA}╰{self.line(36)}╯{RESET}")
@@ -458,6 +479,7 @@ class FlowCLI:
         print("Python:", sys.version.split()[0])
         print("yt-dlp:", yt_dlp.version.__version__)
         ffmpeg_available, ffprobe_available = tools_status()
+        self._tools_status = (ffmpeg_available, ffprobe_available)
         try:
             result = subprocess.run(
                 ["ffmpeg", "-version"],
@@ -628,6 +650,7 @@ class FlowCLI:
             self.flow_release_notes = ()
         ytdlp_pending = is_newer(check.ytdlp_latest, yt_dlp.version.__version__)
         ffmpeg_available, ffprobe_available = tools_status()
+        self._tools_status = (ffmpeg_available, ffprobe_available)
         self.settings.last_update_check = datetime.now().isoformat(timespec="seconds")
         self.settings.last_update_ok = (
             not bool(check.error)
@@ -750,15 +773,18 @@ class FlowCLI:
 
     def start_background_update_check(self) -> None:
         """Comprueba Internet sin impedir que aparezca el menú principal."""
-        if not self.settings.auto_updates or self.update_check_running:
+        if self.update_check_running:
             return
         self.update_check_running = True
 
         def worker() -> None:
             try:
                 with self._update_lock:
-                    check = check_available_updates()
-                    self.record_update_check(check)
+                    if self.settings.auto_updates:
+                        check = check_available_updates()
+                        self.record_update_check(check)
+                    else:
+                        self._tools_status = tools_status()
             finally:
                 self.update_check_running = False
 
@@ -816,29 +842,30 @@ class FlowCLI:
     def run(self) -> None:
         self.start_background_update_check()
         while True:
-            self.logo("MENÚ PRINCIPAL")
-            self.dashboard()
-            self.section("DESCARGAR")
-            self.menu_item("1", "Nueva descarga", "analizar enlace y elegir video o audio")
-            self.section("BIBLIOTECA")
-            self.menu_item("2", "Historial", "últimas 15 descargas")
-            self.menu_item("3", "Mis archivos", "ver los archivos más recientes")
-            self.section("NOVEDADES")
-            if self.flow_update_version:
-                self.menu_item(
-                    "4",
-                    f"¡FlowMobile {self.flow_update_version} disponible!",
-                    "ver novedades e instalar la actualización",
-                )
-            else:
-                self.menu_item("4", "Actualizaciones", "buscar versiones y novedades")
-            self.section("CONFIGURACIÓN")
-            self.menu_item("5", "Sistema", "estado de Python, yt-dlp y FFmpeg")
-            self.menu_item("6", "Ajustes", "formato y calidad predeterminados")
-            self.menu_item("7", "Modo Reparar", "dependencias y temporales dañados")
-            self.menu_item("8", "Pruebas reales", "calidad, códecs, tamaño y compartir")
-            print()
-            self.menu_item("0", "Salir")
+            with self.buffered_screen():
+                self.logo("MENÚ PRINCIPAL")
+                self.dashboard()
+                self.section("DESCARGAR")
+                self.menu_item("1", "Nueva descarga", "analizar enlace y elegir video o audio")
+                self.section("BIBLIOTECA")
+                self.menu_item("2", "Historial", "últimas 15 descargas")
+                self.menu_item("3", "Mis archivos", "ver los archivos más recientes")
+                self.section("NOVEDADES")
+                if self.flow_update_version:
+                    self.menu_item(
+                        "4",
+                        f"¡FlowMobile {self.flow_update_version} disponible!",
+                        "ver novedades e instalar la actualización",
+                    )
+                else:
+                    self.menu_item("4", "Actualizaciones", "buscar versiones y novedades")
+                self.section("CONFIGURACIÓN")
+                self.menu_item("5", "Sistema", "estado de Python, yt-dlp y FFmpeg")
+                self.menu_item("6", "Ajustes", "formato y calidad predeterminados")
+                self.menu_item("7", "Modo Reparar", "dependencias y temporales dañados")
+                self.menu_item("8", "Pruebas reales", "calidad, códecs, tamaño y compartir")
+                print()
+                self.menu_item("0", "Salir")
 
             choice = self.prompt_choice(
                 "Selecciona",

@@ -1,5 +1,6 @@
 import unittest
 import threading
+from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -7,6 +8,33 @@ from flow.presentation.cli import FlowCLI
 
 
 class InteractiveMenuTests(unittest.TestCase):
+    def test_ios_screen_is_written_as_one_terminal_frame(self):
+        class CountingOutput(StringIO):
+            def __init__(self):
+                super().__init__()
+                self.writes = 0
+
+            def write(self, value):
+                self.writes += 1
+                return super().write(value)
+
+        cli = FlowCLI.__new__(FlowCLI)
+        output = CountingOutput()
+        with patch("sys.stdout", output):
+            with cli.buffered_screen():
+                print("línea 1")
+                print("línea 2")
+        self.assertEqual(output.writes, 1)
+        self.assertEqual(output.getvalue(), "línea 1\nlínea 2\n")
+
+    def test_first_logo_does_not_wait_for_ffmpeg_processes(self):
+        cli = FlowCLI.__new__(FlowCLI)
+        cli._tools_status = None
+        with patch("flow.presentation.cli.tools_status") as status:
+            with patch("sys.stdout", StringIO()):
+                cli.logo("MENÚ")
+        status.assert_not_called()
+
     def test_update_check_starts_in_background_without_blocking_menu(self):
         cli = FlowCLI.__new__(FlowCLI)
         cli.settings = SimpleNamespace(
