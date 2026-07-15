@@ -2,7 +2,11 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from install_ios import _configure_profile
+from install_ios import (
+    _clean_installations,
+    _configure_profile,
+    _restore_preserved,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,9 +28,15 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertIn("def install(", content)
         self.assertNotIn("subprocess", content)
         bootstrap = (ROOT / "install.sh").read_text(encoding="utf-8")
-        self.assertIn("install_ios.py | python3", bootstrap)
+        self.assertIn("bootstrap_ios.py | python3", bootstrap)
         self.assertNotIn("&& cd", bootstrap)
         self.assertIn("abre una nueva", bootstrap)
+
+    def test_ios_bootstrap_requests_latest_installer_from_api(self):
+        content = (ROOT / "bootstrap_ios.py").read_text(encoding="utf-8")
+        self.assertIn("api.github.com/repos", content)
+        self.assertIn("application/vnd.github.raw+json", content)
+        self.assertIn('"Cache-Control": "no-cache"', content)
 
     def test_ashell_launcher_is_python(self):
         first_line = (ROOT / "scripts" / "flow_ios.py").read_text(
@@ -58,6 +68,27 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertNotIn("FlowApp/main.py", migrated)
         self.assertIn("FlowMobile/main.py", migrated)
         self.assertIn("alias keep='echo intacto'", migrated)
+
+    def test_clean_install_merges_data_and_removes_legacy_code(self):
+        with TemporaryDirectory() as temporary:
+            documents = Path(temporary)
+            current = documents / "FlowMobile"
+            legacy = documents / "FlowApp"
+            (current / "Downloads").mkdir(parents=True)
+            (legacy / "Downloads").mkdir(parents=True)
+            (current / "Downloads" / "actual.txt").write_text("actual")
+            (legacy / "Downloads" / "anterior.txt").write_text("anterior")
+            (legacy / "main.py").write_text("código viejo")
+            preserved = documents / "temporary" / "preserved"
+
+            _clean_installations([current, legacy], preserved)
+            destination = documents / "InstalledFlowMobile"
+            _restore_preserved(preserved, destination)
+
+            self.assertFalse(current.exists())
+            self.assertFalse(legacy.exists())
+            self.assertTrue((destination / "Downloads" / "actual.txt").is_file())
+            self.assertTrue((destination / "Downloads" / "anterior.txt").is_file())
 
 
 if __name__ == "__main__":

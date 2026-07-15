@@ -79,7 +79,7 @@ case "$SELECTED_PLATFORM" in
         echo
         echo "a-Shell no puede instalar FlowMobile dentro de sh/dash."
         echo "Ejecuta directamente en a-Shell:"
-        echo "curl -fsSL https://raw.githubusercontent.com/$REPOSITORY/$BRANCH/install_ios.py | python3 - $REPOSITORY"
+        echo "curl -fsSL https://raw.githubusercontent.com/$REPOSITORY/$BRANCH/bootstrap_ios.py | python3 - $REPOSITORY"
         echo "Después cierra esa ventana, abre una nueva y escribe: flow"
         exit 1
         ;;

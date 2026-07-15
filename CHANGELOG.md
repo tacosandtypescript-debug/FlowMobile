@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 7.3.7 — 2026-07-15
+
+- Bootstrap de iOS que consulta GitHub API y evita instaladores antiguos en caché.
+- Limpieza de código previo en `FlowMobile`, `FlowApp` y `FlowIOS`.
+- Conservación y unión segura de descargas, historial y ajustes existentes.
+- Eliminación de lanzadores y aliases heredados antes de registrar los nuevos.
+- Inicio automático de FlowMobile después de una instalación correcta.
+- Pruebas para la limpieza de instalaciones y el nuevo bootstrap estable.
+
 ## 7.3.6 — 2026-07-15
 
 - Orden pública de a-Shell sin operadores `&&` incompatibles con su intérprete.

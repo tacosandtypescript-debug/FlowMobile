@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.3.6**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.3.7**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -11,7 +11,7 @@ plataformas.
 Enlace público del repositorio oficial:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install_ios.py | python3 - tacosandtypescript-debug/FlowMobile
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/bootstrap_ios.py | python3 - tacosandtypescript-debug/FlowMobile
 ```
 
 Se requiere la aplicación **a-Shell completa** abierta directamente. El
@@ -19,11 +19,11 @@ instalador se ejecuta con Python para no abrir el entorno aislado `dash`, que no
 puede acceder a los comandos internos de a-Shell. a-Shell mini y la extensión
 ligera de Atajos no incluyen el entorno Python necesario.
 
-El instalador reemplaza aliases antiguos que todavía apunten a `FlowApp` o
-`FlowIOS`. Cuando termine, cierra esa ventana de a-Shell y abre una nueva para
-que cargue `.profile`; después escribe `flow`. No añadas `&&` a la orden porque
-a-Shell lo entrega a Python como texto. En la ventana actual también se puede
-iniciar directamente con `python3 FlowMobile/main.py`.
+El bootstrap consulta la API de GitHub para evitar copias antiguas de caché. El
+instalador elimina el código previo de `FlowMobile`, `FlowApp` y `FlowIOS`, pero
+conserva descargas, historial y ajustes. Al terminar abre FlowMobile
+automáticamente. Para usos posteriores, abre una ventana nueva de a-Shell y
+escribe `flow`. No añadas `sh`, `&&` ni otros comandos al enlace.
 
 ## Instalación en Termux
 

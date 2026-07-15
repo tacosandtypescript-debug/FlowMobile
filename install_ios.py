@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import re
+import runpy
 import shutil
 import sys
 import tarfile
@@ -111,6 +112,46 @@ def _configure_profile(documents: Path, app_directory: Path) -> None:
     profile.write_text(content, encoding="utf-8")
 
 
+def _merge_directory(source: Path, destination: Path) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    for child in source.iterdir():
+        target = destination / child.name
+        if not target.exists():
+            shutil.move(str(child), str(target))
+        elif child.is_dir() and target.is_dir():
+            _merge_directory(child, target)
+
+
+def _clean_installations(candidates: list[Path], preserved: Path) -> None:
+    """Elimina código anterior después de rescatar datos personales."""
+    preserved.mkdir(parents=True, exist_ok=True)
+    unique: list[Path] = []
+    for candidate in candidates:
+        if candidate not in unique:
+            unique.append(candidate)
+
+    for candidate in unique:
+        if not candidate.is_dir():
+            continue
+        for name in PRESERVED_ITEMS:
+            source = candidate / name
+            destination = preserved / name
+            if source.is_dir():
+                _merge_directory(source, destination)
+            elif source.is_file() and not destination.exists():
+                shutil.move(str(source), str(destination))
+        shutil.rmtree(candidate)
+
+
+def _restore_preserved(preserved: Path, app_directory: Path) -> None:
+    app_directory.mkdir(parents=True, exist_ok=True)
+    for name in PRESERVED_ITEMS:
+        source = preserved / name
+        destination = app_directory / name
+        if source.exists() and not destination.exists():
+            shutil.move(str(source), str(destination))
+
+
 def install(
     repository: str = DEFAULT_REPOSITORY,
     branch: str = "main",
@@ -132,7 +173,7 @@ def install(
         tempfile.mkdtemp(prefix="flowmobile-install-", dir=temporary_root)
     )
     archive = work_directory / "flowmobile.tar.gz"
-    backup = work_directory / "previous"
+    preserved = work_directory / "preserved"
 
     print("Instalando FlowMobile para a-Shell…")
     try:
@@ -143,27 +184,18 @@ def install(
         _safe_extract(archive, work_directory)
         source = _find_source(work_directory)
 
-        existing: Path | None = app_directory if app_directory.is_dir() else None
-        if existing is None:
-            for legacy in (documents / "FlowIOS", documents / "FlowApp"):
-                if legacy.is_dir():
-                    existing = legacy
-                    break
-        if existing is not None:
-            shutil.move(str(existing), str(backup))
+        _clean_installations(
+            [app_directory, documents / "FlowIOS", documents / "FlowApp"],
+            preserved,
+        )
 
         try:
             shutil.move(str(source), str(app_directory))
         except Exception:
-            if backup.is_dir() and not app_directory.exists():
-                shutil.move(str(backup), str(app_directory))
+            _restore_preserved(preserved, app_directory)
             raise
 
-        for name in PRESERVED_ITEMS:
-            previous = backup / name
-            current = app_directory / name
-            if previous.exists() and not current.exists():
-                shutil.move(str(previous), str(current))
+        _restore_preserved(preserved, app_directory)
 
         (app_directory / ".flowmobile-source").write_text(
             repository + "\n", encoding="utf-8"
@@ -179,9 +211,8 @@ def install(
     finally:
         shutil.rmtree(work_directory, ignore_errors=True)
 
-    print("FlowMobile instalado para iOS.")
-    print("Cierra esta ventana y abre una nueva para activar el comando: flow")
-    print(f"En esta ventana puedes iniciar con: python3 {app_directory / 'main.py'}")
+    print("FlowMobile instalado para iOS con una copia limpia.")
+    print("Al salir, abre una ventana nueva para usar el comando: flow")
     return app_directory
 
 
@@ -197,10 +228,15 @@ def main(arguments: list[str] | None = None) -> int:
         return 1
     branch = values[1] if len(values) > 1 else os.environ.get("FLOWMOBILE_BRANCH", "main")
     try:
-        install(repository, branch)
+        app_directory = install(repository, branch)
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"No se pudo instalar FlowMobile: {exc}", file=sys.stderr)
         return 1
+    entrypoint = app_directory / "main.py"
+    print("Abriendo FlowMobile…")
+    sys.argv = [str(entrypoint)]
+    sys.path.insert(0, str(app_directory))
+    runpy.run_path(str(entrypoint), run_name="__main__")
     return 0
 
 
