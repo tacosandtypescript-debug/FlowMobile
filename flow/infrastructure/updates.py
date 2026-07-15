@@ -185,6 +185,15 @@ def update_ytdlp() -> UpdateResult:
 
 
 def update_flowmobile(repository: str) -> UpdateResult:
+    if PLATFORM.is_ashell:
+        try:
+            from install_ios import install
+
+            install(repository)
+            return UpdateResult(True, changed=True)
+        except (OSError, RuntimeError, ValueError) as exc:
+            return UpdateResult(False, detail=str(exc))
+
     url = f"https://raw.githubusercontent.com/{repository}/main/install.sh"
     path: Path | None = None
     try:

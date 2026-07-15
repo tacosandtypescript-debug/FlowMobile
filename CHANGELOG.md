@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 7.3.3 — 2026-07-15
+
+- Instalador de a-Shell reescrito en Python para no depender de `sh`/`dash`.
+- Lanzador `flow` de iOS ejecutado como script Python reconocido por ios_system.
+- Actualizaciones de FlowMobile en a-Shell sin iniciar un proceso shell aislado.
+- Diagnóstico de a-Shell ejecutado directamente con Python.
+- Conservación de descargas, historial y ajustes desde el nuevo instalador.
+- Pruebas específicas para el instalador y el lanzador nativos de iOS.
+
 ## 7.3.2 — 2026-07-15
 
 - Instalador y lanzador sin dependencia del comando externo `grep`.

@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.3.2**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.3.3**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -11,11 +11,13 @@ plataformas.
 Enlace público del repositorio oficial:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install_ios.py | python3 - tacosandtypescript-debug/FlowMobile
 ```
 
-Se requiere la aplicación **a-Shell completa** abierta directamente. a-Shell
-mini y la extensión ligera de Atajos no incluyen el entorno Python necesario.
+Se requiere la aplicación **a-Shell completa** abierta directamente. El
+instalador se ejecuta con Python para no abrir el entorno aislado `dash`, que no
+puede acceder a los comandos internos de a-Shell. a-Shell mini y la extensión
+ligera de Atajos no incluyen el entorno Python necesario.
 
 ## Instalación en Termux
 
@@ -26,11 +28,10 @@ pkg install -y curl
 curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
 
-El mismo enlace detecta el sistema y pregunta si se instalará en **Android con
-Termux** o en **iPhone/iPad con a-Shell**. Pulsar Enter acepta el dispositivo
-detectado. Después descarga el instalador correcto y prepara automáticamente
-Python, FFmpeg y `yt-dlp` donde corresponda. En Android también solicita acceso
-a Descargas.
+El instalador de Termux detecta Android y prepara automáticamente Python,
+FFmpeg y `yt-dlp`. En Android también solicita acceso a Descargas. a-Shell usa
+su instalador Python específico porque iOS no permite ejecutar sus comandos
+internos desde un proceso `sh` secundario.
 
 Para instalaciones automáticas sin preguntas se puede añadir `--auto`:
 
@@ -82,7 +83,7 @@ el siguiente inicio.
 - Rutas, reproducción y compartir adaptados a iOS o Android.
 - Panel de almacenamiento, preferencias y mensajes por plataforma.
 - Menú agrupado por tareas y selector compacto con acceso a todas las calidades.
-- Detección de `python3` o `python` y aviso claro cuando se usa a-Shell mini.
+- Instalador y lanzador Python nativos para los comandos internos de a-Shell.
 
 ## Desarrollo y pruebas
 

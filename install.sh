@@ -76,8 +76,11 @@ case "$SELECTED_PLATFORM" in
         PLATFORM_LABEL="Android con Termux"
         ;;
     ashell)
-        PLATFORM_INSTALLER="install-ios.sh"
-        PLATFORM_LABEL="iPhone/iPad con a-Shell"
+        echo
+        echo "a-Shell no puede instalar FlowMobile dentro de sh/dash."
+        echo "Ejecuta directamente en a-Shell:"
+        echo "curl -fsSL https://raw.githubusercontent.com/$REPOSITORY/$BRANCH/install_ios.py | python3 - $REPOSITORY"
+        exit 1
         ;;
 esac
 

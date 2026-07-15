@@ -4,7 +4,7 @@
 
 - `.gitignore`, `.gitattributes`, `VERSION`, `requirements.txt` y `main.py`.
 - Las carpetas `flow/`, `scripts/` y `tests/` completas.
-- `install.sh`, `install-ios.sh` e `install-termux.sh`.
+- `install.sh`, `install-ios.sh`, `install_ios.py` e `install-termux.sh`.
 - `README.md`, `CHANGELOG.md` y `PUBLISHING.md`.
 
 ## Qué no se sube
@@ -40,7 +40,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Corregir instalación de FlowMobile 7.3.2"
+git commit -m "Compatibilidad nativa con a-Shell en FlowMobile 7.3.3"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -54,27 +54,36 @@ git remote set-url origin https://github.com/tacosandtypescript-debug/FlowMobile
 
 ## Pruebas en los dispositivos
 
-En Termux y a-Shell, dentro del proyecto instalado:
+En Termux, dentro del proyecto instalado:
 
 ```sh
 sh scripts/check-device.sh
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 29
+En a-Shell:
+
+```sh
+python3 scripts/check_device.py
+```
+
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 31
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
 
-## Orden pública
+## Órdenes públicas
 
-El mismo enlace detecta ambas plataformas, muestra el dispositivo encontrado y
-permite confirmarlo o escoger Termux/a-Shell:
+En a-Shell se usa el instalador Python nativo para evitar `dash`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install_ios.py | python3 - tacosandtypescript-debug/FlowMobile
+```
+
+En Termux se usa el instalador de shell:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
-
-Las actualizaciones y automatizaciones pueden omitir la pregunta con `--auto`.
 
 En Termux puede ser necesario instalar primero `curl`:
 

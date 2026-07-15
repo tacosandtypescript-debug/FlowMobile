@@ -19,9 +19,12 @@ try {
         "requirements.txt",
         "install.sh",
         "install-ios.sh",
+        "install_ios.py",
         "install-termux.sh",
         "scripts/flow",
+        "scripts/flow_ios.py",
         "scripts/check-device.sh",
+        "scripts/check_device.py",
         "flow/__init__.py"
     )
 
@@ -57,7 +60,7 @@ try {
 
     $textFiles = @()
     $textFiles += Get-ChildItem flow, tests -Recurse -File -Include *.py
-    $textFiles += Get-Item main.py, install.sh, install-ios.sh, install-termux.sh, scripts/flow, scripts/check-device.sh
+    $textFiles += Get-Item main.py, install.sh, install-ios.sh, install_ios.py, install-termux.sh, scripts/flow, scripts/flow_ios.py, scripts/check-device.sh, scripts/check_device.py
     foreach ($file in $textFiles) {
         $content = [IO.File]::ReadAllText($file.FullName)
         if ($content.Contains("`r`n")) {

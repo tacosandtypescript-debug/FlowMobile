@@ -16,6 +16,19 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertIn("a-Shell completa", content)
         self.assertIn("python3 python", content)
 
+    def test_ashell_uses_a_python_installer_instead_of_dash(self):
+        content = (ROOT / "install_ios.py").read_text(encoding="utf-8")
+        self.assertIn("def install(", content)
+        self.assertNotIn("subprocess", content)
+        bootstrap = (ROOT / "install.sh").read_text(encoding="utf-8")
+        self.assertIn("install_ios.py | python3", bootstrap)
+
+    def test_ashell_launcher_is_python(self):
+        first_line = (ROOT / "scripts" / "flow_ios.py").read_text(
+            encoding="utf-8"
+        ).splitlines()[0]
+        self.assertEqual(first_line, "#!/usr/bin/env python3")
+
 
 if __name__ == "__main__":
     unittest.main()
