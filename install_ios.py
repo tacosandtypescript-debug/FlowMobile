@@ -93,6 +93,11 @@ def _install_python_dependencies() -> None:
         raise RuntimeError("pip no pudo instalar yt-dlp y yt-dlp-ejs.")
 
 
+def _flow_alias(app_directory: Path) -> str:
+    target = (app_directory / "main.py").as_posix().replace("'", "'\"'\"'")
+    return f"alias flow='python3 \"{target}\"'"
+
+
 def _configure_profile(documents: Path, app_directory: Path) -> None:
     """Sustituye aliases antiguos sin alterar otras preferencias de a-Shell."""
     profile = documents / ".profile"
@@ -117,16 +122,32 @@ def _configure_profile(documents: Path, app_directory: Path) -> None:
             continue
         cleaned.append(line)
 
-    target = (app_directory / "main.py").as_posix().replace("'", "'\"'\"'")
     content = "\n".join(cleaned).rstrip()
     if content:
         content += "\n\n"
     content += (
         f"{PROFILE_START}\n"
-        f"alias flow='python3 \"{target}\"'\n"
+        f"{_flow_alias(app_directory)}\n"
         f"{PROFILE_END}\n"
     )
     profile.write_text(content, encoding="utf-8")
+
+
+def _valid_launcher_configuration(documents: Path, app_directory: Path) -> bool:
+    """Confirma que una ventana nueva de a-Shell podrá resolver ``flow``."""
+    launcher = documents / "bin" / "flow.py"
+    profile = documents / ".profile"
+    if not launcher.is_file() or not profile.is_file():
+        return False
+    try:
+        content = profile.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return False
+    return (
+        content.count(PROFILE_START) == 1
+        and content.count(PROFILE_END) == 1
+        and _flow_alias(app_directory) in content
+    )
 
 
 def _remove_profile_configuration(documents: Path) -> None:
@@ -282,6 +303,8 @@ def install(
             _install_python_dependencies()
             if not _valid_installation(app_directory):
                 raise RuntimeError("La instalación nueva quedó incompleta.")
+            if not _valid_launcher_configuration(documents, app_directory):
+                raise RuntimeError("No se pudo registrar el comando flow en a-Shell.")
         except Exception:
             shutil.rmtree(app_directory, ignore_errors=True)
             if rollback.exists():
@@ -300,7 +323,11 @@ def install(
         shutil.rmtree(work_directory, ignore_errors=True)
 
     print("FlowMobile instalado para iOS con una copia limpia.")
-    print("Abre una ventana nueva de a-Shell y escribe: flow")
+    print("El comando flow quedó registrado correctamente.")
+    print("Esta misma ventana todavía no ha recargado .profile.")
+    print("Para abrirlo aquí, ejecuta AHORA como una orden separada:")
+    print("cd && . ./.profile && flow")
+    print("También puedes abrir una ventana NUEVA de a-Shell y escribir: flow")
     return app_directory
 
 

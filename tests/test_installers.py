@@ -11,6 +11,7 @@ from install_ios import (
     _configure_profile,
     _restore_preserved,
     _valid_installation,
+    _valid_launcher_configuration,
     install,
 )
 
@@ -83,6 +84,22 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertNotIn("FlowApp/main.py", migrated)
         self.assertIn("FlowMobile/main.py", migrated)
         self.assertIn("alias keep='echo intacto'", migrated)
+
+    def test_launcher_validation_requires_profile_and_python_file(self):
+        with TemporaryDirectory() as temporary:
+            documents = Path(temporary)
+            app = documents / "FlowMobile"
+            (documents / "bin").mkdir()
+            (documents / "bin" / "flow.py").write_text("# launcher")
+
+            self.assertFalse(_valid_launcher_configuration(documents, app))
+            _configure_profile(documents, app)
+            self.assertTrue(_valid_launcher_configuration(documents, app))
+
+    def test_ios_installer_explains_activation_in_current_window(self):
+        content = (ROOT / "install_ios.py").read_text(encoding="utf-8")
+        self.assertIn("Esta misma ventana todavía no ha recargado .profile", content)
+        self.assertIn("cd && . ./.profile && flow", content)
 
     def test_clean_install_merges_data_and_removes_legacy_code(self):
         with TemporaryDirectory() as temporary:

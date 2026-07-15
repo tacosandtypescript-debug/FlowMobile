@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 7.6.2 — 2026-07-15
+
+- El instalador de a-Shell verifica el archivo lanzador y el alias antes de informar éxito.
+- Instrucción explícita para activar `flow` en la misma ventana después de finalizar `curl`.
+- Mensaje diferenciado entre continuar en la ventana actual y abrir una ventana nueva.
+- Pruebas de regresión para impedir instalaciones que no registren el comando `flow`.
+
 ## 7.6.1 — 2026-07-15
 
 - La comprobación de publicación usa exactamente el Python preparado por GitHub Actions.
