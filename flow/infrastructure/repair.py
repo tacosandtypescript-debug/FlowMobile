@@ -7,8 +7,9 @@ import sys
 import time
 
 from flow.infrastructure.ffmpeg import command_available, tools_status
-from flow.infrastructure.paths import AUDIO_DIR, VIDEO_DIR
+from flow.infrastructure.paths import AUDIO_DIR, BATCH_DIR, VIDEO_DIR
 from flow.infrastructure.platform import PLATFORM
+from flow.infrastructure.resume import protected_partial_files
 from flow.infrastructure.updates import UpdateResult, update_ffmpeg, update_ytdlp
 
 
@@ -95,7 +96,8 @@ def clean_temporary_files(
     """Elimina solo restos incompletos antiguos; nunca toca medios terminados."""
     current_time = time.time() if now is None else now
     removed = recovered = failed = 0
-    for root in roots or (VIDEO_DIR, AUDIO_DIR):
+    protected = protected_partial_files()
+    for root in roots or (VIDEO_DIR, AUDIO_DIR, BATCH_DIR):
         if not root.exists():
             continue
         try:
@@ -106,6 +108,8 @@ def clean_temporary_files(
         for path in candidates:
             try:
                 if not path.is_file() or not is_temporary_download(path):
+                    continue
+                if path.resolve() in protected:
                     continue
                 stat = path.stat()
                 if current_time - stat.st_mtime < minimum_age_seconds:

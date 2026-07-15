@@ -1,5 +1,28 @@
 # Historial de versiones
 
+## 7.5.1 — 2026-07-15
+
+- Desinstalación segura accesible desde Herramientas y ajustes.
+- Opción para eliminar el código conservando descargas y datos de reinstalación.
+- Eliminación total protegida mediante la confirmación literal `BORRAR`.
+- Limpieza del alias, `.profile` y lanzadores de a-Shell administrados por FlowMobile.
+- Eliminación comprobada del lanzador `flow` de Termux sin tocar comandos ajenos.
+- Borrado opcional de cookies, colas, historial, ajustes y descargas compartidas.
+- Validación de rutas para impedir la eliminación de Home, Documents o la raíz.
+- Tres pruebas nuevas para perfil, conservación de datos y eliminación completa.
+
+## 7.5.0 — 2026-07-15
+
+- Importación privada de cookies Netscape para sesiones, edad y contenido autorizado.
+- Cookies aisladas en `.flowmobile/sessions` y nunca incluidas en informes o historial.
+- Cancelación con `c` + Enter que conserva y protege los archivos `.part`.
+- Reanudación automática al repetir el enlace o continuar una cola pausada.
+- Descargas por lotes mediante varios enlaces o una playlist completa.
+- Cola persistente con estados completada, pendiente, pausada y error.
+- Carpetas independientes por lote dentro de `Downloads/Lotes`.
+- Menú principal más corto y submenú Herramientas para reducir repintados en iOS.
+- Doce pruebas nuevas para cookies, cancelación, playlists, colas y parciales protegidos.
+
 ## 7.4.2 — 2026-07-15
 
 - Panel principal renderizado como un único fotograma de terminal en a-Shell.

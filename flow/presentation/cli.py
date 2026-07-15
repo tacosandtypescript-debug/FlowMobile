@@ -22,12 +22,19 @@ from flow.application.real_tests import (
     verification_dict,
     verify_download,
 )
+from flow.domain.cancellation import DownloadCancelled, cancellation_requested
 from flow.domain.errors import friendly_error
 from flow.domain.formatting import format_bytes, format_time
 from flow.domain.models import DownloadChoice, MediaInfo
 from flow.domain.progress import DownloadProgress
 from flow.infrastructure.ffmpeg import tools_status
 from flow.infrastructure.history import HistoryError, load_history, search_history
+from flow.infrastructure.batches import (
+    DownloadQueue,
+    create_queue,
+    list_queues,
+    save_queue,
+)
 from flow.infrastructure.device import notify_complete, open_share, play_media
 from flow.infrastructure.paths import AUDIO_DIR, VIDEO_DIR
 from flow.infrastructure.platform import PLATFORM
@@ -36,6 +43,8 @@ from flow.infrastructure.repair import (
     dependency_statuses,
     repair_dependencies,
 )
+from flow.infrastructure.sessions import import_cookies, remove_cookies, session_status
+from flow.infrastructure.uninstall import uninstall
 from flow.infrastructure.settings import load_settings, save_settings
 from flow.infrastructure.updates import (
     check_available_updates,
@@ -208,6 +217,8 @@ class FlowCLI:
     def progress_hook(self, data: dict[str, Any]) -> None:
         status = data.get("status")
         if status == "downloading":
+            if cancellation_requested():
+                raise DownloadCancelled()
             snapshot = self.download_progress.update(data)
             if snapshot is None:
                 return
@@ -411,6 +422,7 @@ class FlowCLI:
         if choice is None:
             return
 
+        print(f"\n{YELLOW}Cancelar conservando progreso: c + Enter o Ctrl+C.{RESET}")
         self.download_progress.reset()
         result = self.service.download(
             media,
@@ -420,6 +432,13 @@ class FlowCLI:
         )
 
         if not result.ok or result.file is None:
+            if isinstance(result.error, DownloadCancelled):
+                partials = len(result.error.partial_files)
+                print(f"\n{YELLOW}{BOLD}DESCARGA PAUSADA{RESET}")
+                print(f"{GRAY}Se conservaron {partials} archivos recuperables.{RESET}")
+                print(f"{CYAN}Pega el mismo enlace para continuar desde ese punto.{RESET}")
+                self.pause()
+                return
             print(f"\n{RED}{BOLD}✗ ERROR DE DESCARGA{RESET}")
             self.show_error(media.url, result.error or RuntimeError("Error desconocido"))
             if result.file is not None and result.file.exists():
@@ -613,6 +632,260 @@ class FlowCLI:
                 else:
                     print(f"{RED}✗ El dispositivo no pudo abrir la vista Compartir.{RESET}")
         self.pause()
+
+    def show_sessions(self) -> None:
+        while True:
+            self.logo("COOKIES Y SESIONES")
+            status = session_status()
+            if status.configured:
+                print(f"{GREEN}✓ Sesión privada configurada{RESET}")
+                print(f"{GRAY}{status.cookies} cookies · {format_bytes(status.size)}{RESET}")
+            else:
+                print(f"{GRAY}No hay cookies importadas.{RESET}")
+            print(f"\n{YELLOW}Nunca pegues contraseñas o tokens directamente en la terminal.{RESET}")
+            self.menu_item("1", "Importar cookies.txt", "formato Netscape exportado por el navegador")
+            self.menu_item("2", "Eliminar sesión privada")
+            self.menu_item("0", "Volver")
+            choice = self.prompt_choice("Selecciona", {"0", "1", "2"})
+            if choice == "0":
+                return
+            if choice == "1":
+                raw_path = self.read_input("Ruta del archivo cookies.txt › ").strip().strip("\"'")
+                try:
+                    imported = import_cookies(Path(raw_path))
+                    print(f"{GREEN}✓ {imported.cookies} cookies guardadas de forma privada.{RESET}")
+                except ValueError as exc:
+                    print(f"{RED}{exc}{RESET}")
+                self.pause()
+            elif choice == "2":
+                confirm = self.prompt_choice("¿Eliminar cookies? [1] Sí  [2] No", {"1", "2"})
+                if confirm == "1":
+                    remove_cookies()
+                    print(f"{GREEN}Sesión eliminada.{RESET}")
+                    self.pause()
+
+    def read_batch_links(self) -> list[str]:
+        print(f"{GRAY}Pega un enlace por línea. Enter vacío inicia la cola.{RESET}")
+        urls: list[str] = []
+        while True:
+            value = self.read_input(f"Enlace {len(urls) + 1} › ").strip()
+            if not value:
+                return list(dict.fromkeys(urls))
+            parsed = urlparse(value)
+            if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
+                print(f"{YELLOW}Enlace omitido: no es una URL web válida.{RESET}")
+                continue
+            urls.append(value)
+
+    def process_queue(self, queue: DownloadQueue) -> None:
+        self.logo(f"LOTE {queue.queue_id}")
+        print(f"{GRAY}Carpeta separada: {queue.folder}{RESET}")
+        print(f"{YELLOW}Cancelar archivo actual: c + Enter o Ctrl+C.{RESET}\n")
+        last_file: Path | None = None
+        total = len(queue.items)
+        for index, item in enumerate(queue.items, 1):
+            if item.status == "completed":
+                continue
+            print(f"{MAGENTA}{BOLD}[{index}/{total}]{RESET} Analizando…")
+            item.status = "downloading"
+            item.error = ""
+            save_queue(queue)
+            try:
+                media = self.service.inspect(item.url)
+                item.title = media.title
+                save_queue(queue)
+            except KeyboardInterrupt:
+                item.status = "paused"
+                item.error = "Pausada durante el análisis"
+                save_queue(queue)
+                print(f"{YELLOW}Cola pausada antes de descargar este elemento.{RESET}")
+                break
+            except Exception as exc:
+                title, _ = friendly_error(item.url, exc)
+                item.status = "error"
+                item.error = title
+                save_queue(queue)
+                print(f"{RED}✗ {title}{RESET}")
+                continue
+
+            print(f"{CYAN}{media.title[:42]}{RESET}")
+            self.download_progress.reset()
+            result = self.service.download(
+                media,
+                queue.choice,
+                self.progress_hook,
+                self.conversion_progress,
+                video_dir=queue.folder / "Videos",
+                audio_dir=queue.folder / "Audio",
+            )
+            if result.ok and result.file is not None:
+                item.status = "completed"
+                item.file = str(result.file)
+                last_file = result.file
+                print(f"{GREEN}✓ Completada · {format_bytes(result.file.stat().st_size)}{RESET}")
+            elif isinstance(result.error, DownloadCancelled):
+                item.status = "paused"
+                item.error = "Pausada por la persona"
+                save_queue(queue)
+                print(f"{YELLOW}Cola pausada. Los .part se conservaron.{RESET}")
+                break
+            else:
+                item.status = "error"
+                item.error = str(result.error or "Error desconocido")[:180]
+                print(f"{RED}✗ {item.error}{RESET}")
+            save_queue(queue)
+
+        print(f"\n{MAGENTA}{BOLD}COLA: {queue.completed}/{total} completadas{RESET}")
+        print(f"{GRAY}{queue.pending} pendientes, pausadas o con error.{RESET}")
+        if last_file is not None:
+            notify_complete(last_file)
+        self.pause()
+
+    def create_batch(self, urls: list[str]) -> None:
+        if not urls:
+            print(f"{YELLOW}No se añadieron enlaces.{RESET}")
+            self.pause()
+            return
+        try:
+            print(f"{CYAN}Analizando el primer enlace para elegir calidad…{RESET}")
+            first_media = self.service.inspect(urls[0])
+        except Exception as exc:
+            self.show_error(urls[0], exc)
+            self.pause()
+            return
+        choice = self.choose_quality(first_media)
+        if choice is None:
+            return
+        queue = create_queue(urls, choice)
+        self.process_queue(queue)
+
+    def resume_batch(self) -> None:
+        queues = list_queues(incomplete_only=True)[:9]
+        self.logo("REANUDAR COLA")
+        if not queues:
+            print(f"{GRAY}No hay colas pendientes.{RESET}")
+            self.pause()
+            return
+        actions: dict[str, DownloadQueue] = {}
+        for index, queue in enumerate(queues, 1):
+            actions[str(index)] = queue
+            print(
+                f"{CYAN}[{index}]{RESET} {queue.queue_id} · "
+                f"{queue.completed}/{len(queue.items)} completas"
+            )
+        print(f"{RED}[0]{RESET} Volver")
+        selected = self.prompt_choice("Selecciona", set(actions) | {"0"})
+        if selected != "0":
+            self.process_queue(actions[selected])
+
+    def show_batches(self) -> None:
+        while True:
+            self.logo("DESCARGAS POR LOTES")
+            pending = len(list_queues(incomplete_only=True))
+            print(f"{GRAY}Colas pendientes: {pending}{RESET}\n")
+            self.menu_item("1", "Pegar varios enlaces")
+            self.menu_item("2", "Importar una playlist")
+            self.menu_item("3", "Reanudar una cola")
+            self.menu_item("0", "Volver")
+            choice = self.prompt_choice("Selecciona", {"0", "1", "2", "3"})
+            if choice == "0":
+                return
+            if choice == "1":
+                self.create_batch(self.read_batch_links())
+            elif choice == "2":
+                url = self.read_input("Enlace de playlist › ").strip()
+                try:
+                    print(f"{CYAN}Leyendo playlist…{RESET}")
+                    urls = self.service.playlist_urls(url)
+                except Exception as exc:
+                    self.show_error(url, exc)
+                    self.pause()
+                    continue
+                print(f"{GREEN}✓ {len(urls)} elementos detectados.{RESET}")
+                if urls:
+                    confirm = self.prompt_choice("¿Crear esta cola? [1] Sí  [2] No", {"1", "2"})
+                    if confirm == "1":
+                        self.create_batch(urls)
+                else:
+                    self.pause()
+            elif choice == "3":
+                self.resume_batch()
+
+    def show_tools_menu(self) -> None:
+        while True:
+            with self.buffered_screen():
+                self.logo("HERRAMIENTAS")
+                self.menu_item("1", "Cookies y sesiones")
+                self.menu_item("2", "Sistema")
+                self.menu_item("3", "Modo Reparar")
+                self.menu_item("4", "Ajustes")
+                self.menu_item("5", "Pruebas reales")
+                self.menu_item("6", "Desinstalar FlowMobile")
+                self.menu_item("0", "Volver")
+            choice = self.prompt_choice(
+                "Selecciona",
+                {"0", "1", "2", "3", "4", "5", "6"},
+            )
+            if choice == "0":
+                return
+            if choice == "1":
+                self.show_sessions()
+            elif choice == "2":
+                self.show_system()
+            elif choice == "3":
+                self.show_repair()
+            elif choice == "4":
+                self.show_settings()
+            elif choice == "5":
+                self.show_real_tests()
+            elif choice == "6":
+                self.show_uninstall()
+
+    def show_uninstall(self) -> None:
+        self.logo("DESINSTALAR FLOWMOBILE")
+        print(f"{YELLOW}Esta acción elimina el comando flow y el código instalado.{RESET}\n")
+        self.menu_item("1", "Desinstalar y conservar datos", "mantiene descargas, historial, colas y cookies")
+        self.menu_item("2", "Borrar absolutamente todo", "incluye descargas, cookies, colas, historial y ajustes")
+        self.menu_item("0", "Cancelar")
+        choice = self.prompt_choice("Selecciona", {"0", "1", "2"})
+        if choice == "0":
+            return
+        purge_all = choice == "2"
+        if purge_all:
+            print(f"\n{RED}{BOLD}Esta opción no se puede deshacer.{RESET}")
+            confirmation = self.read_input("Escribe BORRAR para continuar › ").strip()
+            if confirmation != "BORRAR":
+                print(f"{GRAY}Desinstalación cancelada.{RESET}")
+                self.pause()
+                return
+        else:
+            confirmation = self.prompt_choice(
+                "¿Desinstalar conservando tus datos? [1] Sí  [2] No",
+                {"1", "2"},
+            )
+            if confirmation == "2":
+                return
+
+        print(f"{CYAN}Eliminando FlowMobile…{RESET}")
+        try:
+            with self._update_lock:
+                result = uninstall(purge_all=purge_all)
+        except (OSError, ValueError) as exc:
+            print(f"{RED}No se pudo completar la desinstalación: {exc}{RESET}")
+            self.pause()
+            return
+        if result.errors:
+            print(f"{YELLOW}FlowMobile se eliminó parcialmente:{RESET}")
+            for error in result.errors[:5]:
+                print(f"{YELLOW}• {error}{RESET}")
+        else:
+            print(f"{GREEN}✓ FlowMobile fue eliminado correctamente.{RESET}")
+        if purge_all:
+            print(f"{GRAY}También se eliminaron todos los datos y descargas.{RESET}")
+        else:
+            print(f"{GRAY}Tus datos quedaron preparados para una futura reinstalación.{RESET}")
+        print(f"{GRAY}Cierra esta ventana de terminal. El comando flow ya no estará disponible.{RESET}")
+        raise SystemExit(0)
 
     def show_files(self) -> None:
         self.logo("ARCHIVOS")
@@ -846,47 +1119,40 @@ class FlowCLI:
                 self.logo("MENÚ PRINCIPAL")
                 self.dashboard()
                 self.section("DESCARGAR")
-                self.menu_item("1", "Nueva descarga", "analizar enlace y elegir video o audio")
+                self.menu_item("1", "Nueva descarga")
+                self.menu_item("2", "Lotes y playlists")
                 self.section("BIBLIOTECA")
-                self.menu_item("2", "Historial", "últimas 15 descargas")
-                self.menu_item("3", "Mis archivos", "ver los archivos más recientes")
+                self.menu_item("3", "Historial")
+                self.menu_item("4", "Mis archivos")
                 self.section("NOVEDADES")
                 if self.flow_update_version:
                     self.menu_item(
-                        "4",
+                        "5",
                         f"¡FlowMobile {self.flow_update_version} disponible!",
-                        "ver novedades e instalar la actualización",
                     )
                 else:
-                    self.menu_item("4", "Actualizaciones", "buscar versiones y novedades")
+                    self.menu_item("5", "Actualizaciones")
                 self.section("CONFIGURACIÓN")
-                self.menu_item("5", "Sistema", "estado de Python, yt-dlp y FFmpeg")
-                self.menu_item("6", "Ajustes", "formato y calidad predeterminados")
-                self.menu_item("7", "Modo Reparar", "dependencias y temporales dañados")
-                self.menu_item("8", "Pruebas reales", "calidad, códecs, tamaño y compartir")
+                self.menu_item("6", "Herramientas y ajustes")
                 print()
                 self.menu_item("0", "Salir")
 
             choice = self.prompt_choice(
                 "Selecciona",
-                {"0", "1", "2", "3", "4", "5", "6", "7", "8"},
+                {"0", "1", "2", "3", "4", "5", "6"},
             )
             if choice == "1":
                 self.new_download()
             elif choice == "2":
-                self.show_history()
+                self.show_batches()
             elif choice == "3":
-                self.show_files()
+                self.show_history()
             elif choice == "4":
-                self.check_updates(force=True, interactive=True)
+                self.show_files()
             elif choice == "5":
-                self.show_system()
+                self.check_updates(force=True, interactive=True)
             elif choice == "6":
-                self.show_settings()
-            elif choice == "7":
-                self.show_repair()
-            elif choice == "8":
-                self.show_real_tests()
+                self.show_tools_menu()
             elif choice == "0":
                 self.clear()
                 print("FlowMobile cerrado.")

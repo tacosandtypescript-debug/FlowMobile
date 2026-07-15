@@ -1,8 +1,10 @@
 from __future__ import annotations
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable
 
 from flow.domain.models import MediaInfo, DownloadChoice, DownloadResult
+from flow.domain.cancellation import DownloadCancelled
 from flow.domain.sites import platform_name
 from flow.infrastructure import ytdlp_gateway
 from flow.infrastructure.ffmpeg import convert_audio, convert_video, media_quality
@@ -10,6 +12,9 @@ from flow.infrastructure.history import HistoryError, save_history
 
 
 class MediaService:
+    def playlist_urls(self, url: str) -> list[str]:
+        return ytdlp_gateway.playlist_urls(url)
+
     def inspect(self, url: str) -> MediaInfo:
         info = ytdlp_gateway.inspect(url)
         return MediaInfo(
@@ -41,6 +46,8 @@ class MediaService:
         choice: DownloadChoice,
         progress_hook: Callable[[dict[str, Any]], None],
         conversion_progress: Callable[[float], None],
+        video_dir: Path | None = None,
+        audio_dir: Path | None = None,
     ) -> DownloadResult:
         final_file = None
         try:
@@ -49,6 +56,8 @@ class MediaService:
                 choice.kind,
                 choice.height,
                 progress_hook,
+                **({"video_dir": video_dir} if video_dir is not None else {}),
+                **({"audio_dir": audio_dir} if audio_dir is not None else {}),
             )
 
             if choice.kind == "video":
@@ -90,6 +99,13 @@ class MediaService:
                 file=final_file,
                 warning=warning,
                 quality=quality,
+            )
+        except KeyboardInterrupt:
+            preserved = [final_file] if final_file is not None and final_file.exists() else []
+            return DownloadResult(
+                ok=False,
+                file=final_file,
+                error=DownloadCancelled(preserved),
             )
         except Exception as exc:
             return DownloadResult(ok=False, file=final_file, error=exc)

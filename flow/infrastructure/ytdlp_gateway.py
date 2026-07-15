@@ -4,7 +4,10 @@ from typing import Any, Callable
 import time
 import yt_dlp
 
+from flow.domain.cancellation import DownloadCancelled
 from flow.infrastructure.paths import AUDIO_DIR, VIDEO_DIR
+from flow.infrastructure.resume import register_partial_files
+from flow.infrastructure.sessions import cookie_options
 
 
 class SilentLogger:
@@ -19,7 +22,7 @@ class SilentLogger:
 
 
 def common_options(progress_hook: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
-    return {
+    options: dict[str, Any] = {
         "quiet": True,
         "no_warnings": True,
         "noprogress": True,
@@ -30,7 +33,11 @@ def common_options(progress_hook: Callable[[dict[str, Any]], None]) -> dict[str,
         "fragment_retries": 10,
         "extractor_retries": 5,
         "socket_timeout": 30,
+        "continuedl": True,
+        "nopart": False,
     }
+    options.update(cookie_options())
+    return options
 
 
 def inspect(url: str) -> dict[str, Any]:
@@ -46,6 +53,37 @@ def inspect(url: str) -> dict[str, Any]:
             if isinstance(entry, dict):
                 return entry
     return info
+
+
+def playlist_urls(url: str) -> list[str]:
+    options = common_options(lambda _: None)
+    options.update({
+        "skip_download": True,
+        "progress_hooks": [],
+        "noplaylist": False,
+        "extract_flat": "in_playlist",
+    })
+    with yt_dlp.YoutubeDL(options) as ydl:
+        info = ydl.extract_info(url, download=False)
+    entries = info.get("entries") if isinstance(info, dict) else None
+    urls: list[str] = []
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+        candidates = (
+            entry.get("webpage_url"),
+            entry.get("original_url"),
+            entry.get("url"),
+        )
+        selected = next(
+            (value for value in candidates if isinstance(value, str) and value.startswith(("http://", "https://"))),
+            None,
+        )
+        if selected is None and entry.get("id") and str(entry.get("ie_key") or "").casefold() == "youtube":
+            selected = f"https://www.youtube.com/watch?v={entry['id']}"
+        if selected:
+            urls.append(selected)
+    return list(dict.fromkeys(urls))
 
 
 def available_resolutions(info: dict[str, Any]) -> list[int]:
@@ -175,30 +213,47 @@ def download(
     kind: str,
     height: int | None,
     progress_hook: Callable[[dict[str, Any]], None],
+    video_dir: Path = VIDEO_DIR,
+    audio_dir: Path = AUDIO_DIR,
 ) -> tuple[dict[str, Any], Path]:
     options = common_options(progress_hook)
     started = time.time()
 
     if kind == "audio":
-        target_dir = AUDIO_DIR
+        target_dir = audio_dir
         options.update({
             "format": "bestaudio[ext=m4a]/bestaudio/best[acodec!=none]",
-            "outtmpl": str(AUDIO_DIR / "%(title).120B [%(id)s].%(ext)s"),
+            "outtmpl": str(target_dir / "%(title).120B [%(id)s].%(ext)s"),
         })
     else:
-        target_dir = VIDEO_DIR
+        target_dir = video_dir
         selector = "bestvideo*+bestaudio/best"
         options.update({
             "format": selector,
-            "outtmpl": str(VIDEO_DIR / "%(title).120B [%(id)s].%(ext)s"),
+            "outtmpl": str(target_dir / "%(title).120B [%(id)s].%(ext)s"),
             "merge_output_format": "mkv",
         })
         if height is not None:
             # `res` usa la dimensión menor y funciona también con video vertical.
             options["format_sort"] = [f"res:{height}"]
 
-    with yt_dlp.YoutubeDL(options) as ydl:
-        info = ydl.extract_info(url, download=True)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            info = ydl.extract_info(url, download=True)
+    except (DownloadCancelled, KeyboardInterrupt) as error:
+        partials: list[Path] = []
+        for path in target_dir.rglob("*.part"):
+            try:
+                if path.stat().st_mtime >= started - 2:
+                    partials.append(path)
+            except OSError:
+                pass
+        register_partial_files(partials)
+        if isinstance(error, DownloadCancelled):
+            error.partial_files = partials
+            raise
+        raise DownloadCancelled(partials) from None
 
     final_file = result_file(info, target_dir) or newest_file(target_dir, started)
 

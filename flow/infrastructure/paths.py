@@ -4,6 +4,8 @@ from flow.infrastructure.platform import PLATFORM, termux_shared_downloads
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 STATE_DIR = BASE_DIR / ".flowmobile"
+SESSION_DIR = STATE_DIR / "sessions"
+QUEUE_DIR = STATE_DIR / "queues"
 
 
 def _prepare_download_dir() -> Path:
@@ -31,9 +33,18 @@ def _prepare_download_dir() -> Path:
 DOWNLOAD_DIR = _prepare_download_dir()
 VIDEO_DIR = DOWNLOAD_DIR / "Videos"
 AUDIO_DIR = DOWNLOAD_DIR / "Audio"
+BATCH_DIR = DOWNLOAD_DIR / "Lotes"
 HISTORY_FILE = STATE_DIR / "history.json"
 SETTINGS_FILE = STATE_DIR / "settings.json"
 LEGACY_HISTORY_FILE = BASE_DIR / "Downloads" / "history.json"
 LEGACY_SETTINGS_FILE = BASE_DIR / "flow_settings.json"
 
 STATE_DIR.mkdir(parents=True, exist_ok=True)
+SESSION_DIR.mkdir(parents=True, exist_ok=True)
+QUEUE_DIR.mkdir(parents=True, exist_ok=True)
+BATCH_DIR.mkdir(parents=True, exist_ok=True)
+for private_directory in (STATE_DIR, SESSION_DIR, QUEUE_DIR):
+    try:
+        private_directory.chmod(0o700)
+    except OSError:
+        pass

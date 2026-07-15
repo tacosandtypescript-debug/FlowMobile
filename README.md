@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.4.2**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.5.1**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -100,6 +100,55 @@ el siguiente inicio.
 - Apertura inmediata del menú mientras las actualizaciones se revisan en segundo plano.
 - Renderizado del panel en un solo bloque para evitar tirones visuales en a-Shell.
 - Detección inicial de FFmpeg y FFprobe fuera del hilo de interfaz de iOS.
+- Cookies Netscape importadas en almacenamiento privado y aplicadas automáticamente.
+- Cancelación limpia mediante `c` + Enter, conservando los `.part` para continuar.
+- Colas persistentes para varios enlaces y playlists, con reanudación tras cerrar la app.
+- Archivos de cada lote separados dentro de `Downloads/Lotes/<fecha>`.
+- Menú principal compacto; diagnóstico, sesiones y reparación viven en Herramientas.
+
+## Cookies y sesiones privadas
+
+Desde **Herramientas y ajustes → Cookies y sesiones** se puede importar un
+archivo `cookies.txt` en formato Netscape. FlowMobile lo copia a
+`.flowmobile/sessions`, aplica permisos privados y lo utiliza automáticamente
+al analizar o descargar. La ruta original no se guarda. Las cookies nunca se
+incluyen en el historial, los diagnósticos, las colas ni GitHub.
+
+Las cookies permiten que yt-dlp use una sesión ya iniciada, pero no evitan las
+reglas del sitio. Solo deben importarse cookies propias y no deben compartirse.
+
+## Cancelar, continuar y descargar por lotes
+
+Durante una transferencia escribe `c` y presiona Enter, o utiliza `Ctrl+C`.
+FlowMobile pausa la
+descarga y protege los archivos `.part`; al pegar el mismo enlace, yt-dlp
+continúa automáticamente. El Modo Reparar no elimina parciales registrados para
+reanudación.
+
+La opción **Lotes y playlists** acepta varios enlaces, extrae los elementos de
+una playlist y muestra completadas, pendientes y errores. Cada cola se guarda
+privadamente en `.flowmobile/queues` y puede reanudarse desde el mismo menú. Los
+medios terminados se organizan en:
+
+```text
+Downloads/Lotes/AAAAMMDD-HHMMSS/Videos
+Downloads/Lotes/AAAAMMDD-HHMMSS/Audio
+```
+
+## Actualizar, reinstalar o desinstalar
+
+Las actualizaciones normales reemplazan el código y conservan descargas,
+historial, ajustes, cookies y colas. En **Herramientas y ajustes → Desinstalar
+FlowMobile** existen dos opciones:
+
+- **Conservar datos:** elimina el programa y el comando `flow`, pero deja los
+  datos preparados para una instalación futura.
+- **Borrar absolutamente todo:** elimina programa, lanzadores, descargas,
+  cookies, colas, historial y ajustes. Requiere escribir `BORRAR` exactamente.
+
+En a-Shell también se limpia el bloque administrado dentro de `.profile` y los
+lanzadores antiguos de `Documents/bin`. En Termux solo se elimina el ejecutable
+`flow` cuando se comprueba que pertenece a FlowMobile.
 
 ## Modo Reparar y pruebas reales
 
