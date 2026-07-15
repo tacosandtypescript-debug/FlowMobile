@@ -1,14 +1,17 @@
 #!/bin/sh
-if [ -n "${TERMUX_VERSION:-}" ] || printf '%s' "${PREFIX:-}" | grep -q 'com.termux'; then
-    APP_DIR="${FLOWMOBILE_HOME:-$HOME/FlowMobile}"
-else
-    DOCUMENTS="$HOME"
-    case "$DOCUMENTS" in
-        */Documents) ;;
-        *) DOCUMENTS="$HOME/Documents" ;;
-    esac
-    APP_DIR="${FLOWMOBILE_HOME:-$DOCUMENTS/FlowMobile}"
-fi
+case "${TERMUX_VERSION:-}:${PREFIX:-}" in
+    *com.termux*)
+        APP_DIR="${FLOWMOBILE_HOME:-$HOME/FlowMobile}"
+        ;;
+    *)
+        DOCUMENTS="$HOME"
+        case "$DOCUMENTS" in
+            */Documents) ;;
+            *) DOCUMENTS="$HOME/Documents" ;;
+        esac
+        APP_DIR="${FLOWMOBILE_HOME:-$DOCUMENTS/FlowMobile}"
+        ;;
+esac
 
 if [ ! -f "$APP_DIR/main.py" ]; then
     echo "FlowMobile no está instalado en $APP_DIR"
@@ -16,4 +19,19 @@ if [ ! -f "$APP_DIR/main.py" ]; then
     exit 1
 fi
 
-exec python3 "$APP_DIR/main.py" "$@"
+PYTHON_COMMAND="${FLOWMOBILE_PYTHON:-}"
+if [ -z "$PYTHON_COMMAND" ]; then
+    for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            PYTHON_COMMAND="$candidate"
+            break
+        fi
+    done
+fi
+if [ -z "$PYTHON_COMMAND" ]; then
+    echo "Python no está disponible."
+    echo "En iOS instala y abre a-Shell completo; a-Shell mini no es compatible."
+    exit 1
+fi
+
+exec "$PYTHON_COMMAND" "$APP_DIR/main.py" "$@"

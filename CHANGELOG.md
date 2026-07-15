@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 7.3.2 — 2026-07-15
+
+- Instalador y lanzador sin dependencia del comando externo `grep`.
+- Detección compatible con los comandos `python3` y `python`.
+- Mensaje claro cuando se intenta usar a-Shell mini o la extensión de Atajos.
+- Comprobaciones automatizadas para la compatibilidad de los instaladores.
+
 ## 7.3.1 — 2026-07-15
 
 - `.gitignore` separado por datos privados, Python, temporales y editor.

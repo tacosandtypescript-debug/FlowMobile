@@ -10,13 +10,16 @@ case "$REPOSITORY" in
     *) echo "Repositorio no válido. Usa USUARIO/FlowMobile."; exit 1 ;;
 esac
 
-if [ -n "${TERMUX_VERSION:-}" ] || printf '%s' "${PREFIX:-}" | grep -q 'com.termux'; then
-    DETECTED_PLATFORM="termux"
-    DETECTED_LABEL="Android con Termux"
-else
-    DETECTED_PLATFORM="ashell"
-    DETECTED_LABEL="iPhone/iPad con a-Shell"
-fi
+case "${TERMUX_VERSION:-}:${PREFIX:-}" in
+    *com.termux*)
+        DETECTED_PLATFORM="termux"
+        DETECTED_LABEL="Android con Termux"
+        ;;
+    *)
+        DETECTED_PLATFORM="ashell"
+        DETECTED_LABEL="iPhone/iPad con a-Shell"
+        ;;
+esac
 
 SELECTED_PLATFORM="${FLOWMOBILE_PLATFORM:-}"
 if [ "$MODE" = "--auto" ] || [ "${FLOWMOBILE_NONINTERACTIVE:-0}" = "1" ]; then

@@ -13,6 +13,22 @@ BIN_DIR="$DOCUMENTS/bin"
 WORK_DIR="${TMPDIR:-$DOCUMENTS/tmp}/flowmobile-install-$$"
 ARCHIVE="$WORK_DIR/flowmobile.tar.gz"
 
+PYTHON_COMMAND="${FLOWMOBILE_PYTHON:-}"
+if [ -z "$PYTHON_COMMAND" ]; then
+    for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            PYTHON_COMMAND="$candidate"
+            break
+        fi
+    done
+fi
+if [ -z "$PYTHON_COMMAND" ]; then
+    echo "Python no está disponible en este entorno."
+    echo "FlowMobile requiere la aplicación a-Shell completa, no a-Shell mini."
+    echo "Abre a-Shell directamente; no ejecutes el instalador desde una extensión de Atajos."
+    exit 1
+fi
+
 echo "Instalando FlowMobile para a-Shell…"
 mkdir -p "$WORK_DIR" "$BIN_DIR"
 cd "$DOCUMENTS"
@@ -53,7 +69,7 @@ done
 printf '%s\n' "$REPOSITORY" > "$APP_DIR/.flowmobile-source"
 cp "$APP_DIR/scripts/flow" "$BIN_DIR/flow"
 chmod +x "$BIN_DIR/flow"
-python3 -m pip install --disable-pip-version-check --no-deps --upgrade \
+"$PYTHON_COMMAND" -m pip install --disable-pip-version-check --no-deps --upgrade \
     yt-dlp yt-dlp-ejs
 rm -rf "$WORK_DIR"
 

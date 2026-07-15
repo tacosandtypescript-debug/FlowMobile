@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.3.1**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.3.2**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -13,6 +13,9 @@ Enlace público del repositorio oficial:
 ```sh
 curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
+
+Se requiere la aplicación **a-Shell completa** abierta directamente. a-Shell
+mini y la extensión ligera de Atajos no incluyen el entorno Python necesario.
 
 ## Instalación en Termux
 
@@ -79,6 +82,7 @@ el siguiente inicio.
 - Rutas, reproducción y compartir adaptados a iOS o Android.
 - Panel de almacenamiento, preferencias y mensajes por plataforma.
 - Menú agrupado por tareas y selector compacto con acceso a todas las calidades.
+- Detección de `python3` o `python` y aviso claro cuando se usa a-Shell mini.
 
 ## Desarrollo y pruebas
 

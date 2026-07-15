@@ -40,7 +40,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Publicar FlowMobile 7.3.1"
+git commit -m "Corregir instalación de FlowMobile 7.3.2"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -60,7 +60,7 @@ En Termux y a-Shell, dentro del proyecto instalado:
 sh scripts/check-device.sh
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 27
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 29
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
