@@ -43,8 +43,10 @@ def documents_directory(home: Path | None = None) -> Path:
 
 
 def _safe_target(path: Path, documents: Path) -> Path:
-    root = Path(os.path.abspath(documents))
-    target = Path(os.path.abspath(path))
+    # resolve() unifica nombres equivalentes del sistema antes de comparar:
+    # RUNNER~1/nombre largo en Windows y /var//private/var en iOS.
+    root = documents.resolve(strict=False)
+    target = path.resolve(strict=False)
     if target == root or os.path.commonpath((str(root), str(target))) != str(root):
         raise ValueError(f"Ruta protegida, no se borrará: {target}")
     return target

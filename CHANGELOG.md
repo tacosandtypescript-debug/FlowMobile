@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 7.6.5 — 2026-07-16
+
+- Normalización de rutas equivalentes antes de aplicar las protecciones del borrado.
+- Compatibilidad con los alias `/var` y `/private/var` usados por iOS y a-Shell.
+- Compatibilidad de la regresión de seguridad con nombres cortos y largos de Windows.
+
 ## 7.6.4 — 2026-07-16
 
 - Desinstalador independiente para borrar FlowMobile incluso cuando la aplicación está abierta desde su propia carpeta.
