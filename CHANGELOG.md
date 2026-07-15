@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 7.5.3 — 2026-07-15
+
+- La desinstalación con conservación elimina ahora toda la carpeta del programa.
+- Descargas, historial, ajustes, cookies y colas se trasladan a una reserva privada separada.
+- El instalador de a-Shell y Termux restaura automáticamente esa reserva al reinstalar.
+- El borrado total elimina también cualquier reserva creada por una desinstalación anterior.
+- Verificación posterior para no informar éxito cuando el sistema no eliminó una ruta.
+- Protección de `.flowmobile-data` en Git y en la comprobación de publicación.
+
 ## 7.5.2 — 2026-07-15
 
 - Detección específica del bloqueo de dirección IP informado por TikTok.

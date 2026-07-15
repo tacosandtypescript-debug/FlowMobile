@@ -52,7 +52,7 @@ try {
 
     $markerPattern = "TU_" + "USUARIO|TU_" + "REPOSITORIO"
     $searchFiles = Get-ChildItem -Recurse -File | Where-Object {
-        $_.FullName -notmatch '[\\/](Downloads|\.git|\.codex|\.agents|\.flowmobile)[\\/]'
+            $_.FullName -notmatch '[\\/](Downloads|\.git|\.codex|\.agents|\.flowmobile|\.flowmobile-data)[\\/]'
     }
     $placeholder = $searchFiles | Select-String -Pattern $markerPattern -Encoding utf8
     if ($placeholder) {
@@ -72,6 +72,7 @@ try {
     $privatePatterns = @(
         "/Downloads/",
         "/.flowmobile/",
+        "/.flowmobile-data/",
         "/.ssh/",
         "/.env",
         "/.git-credentials"

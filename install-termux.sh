@@ -4,6 +4,7 @@ set -eu
 REPOSITORY="${1:-${FLOWMOBILE_REPOSITORY:-tacosandtypescript-debug/FlowMobile}}"
 BRANCH="${FLOWMOBILE_BRANCH:-main}"
 APP_DIR="${FLOWMOBILE_HOME:-$HOME/FlowMobile}"
+DATA_BACKUP_DIR="$(dirname "$APP_DIR")/.flowmobile-data"
 BIN_DIR="${PREFIX:-$HOME/../usr}/bin"
 WORK_DIR="${TMPDIR:-${PREFIX:-$HOME/../usr}/tmp}/flowmobile-install-$$"
 ARCHIVE="$WORK_DIR/flowmobile.tar.gz"
@@ -48,11 +49,14 @@ if ! mv "$SOURCE_DIR" "$APP_DIR"; then
     exit 1
 fi
 
-for item in Downloads .flowmobile flow_settings.json; do
-    if [ -e "$BACKUP_DIR/$item" ] && [ ! -e "$APP_DIR/$item" ]; then
-        mv "$BACKUP_DIR/$item" "$APP_DIR/$item"
-    fi
+for saved in "$DATA_BACKUP_DIR" "$BACKUP_DIR"; do
+    for item in Downloads .flowmobile flow_settings.json; do
+        if [ -e "$saved/$item" ] && [ ! -e "$APP_DIR/$item" ]; then
+            mv "$saved/$item" "$APP_DIR/$item"
+        fi
+    done
 done
+rmdir "$DATA_BACKUP_DIR" 2>/dev/null || true
 
 printf '%s\n' "$REPOSITORY" > "$APP_DIR/.flowmobile-source"
 cp "$APP_DIR/scripts/flow" "$BIN_DIR/flow"

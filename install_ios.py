@@ -21,6 +21,7 @@ from urllib.request import Request, urlopen
 DEFAULT_REPOSITORY = "tacosandtypescript-debug/FlowMobile"
 REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 PRESERVED_ITEMS = ("Downloads", ".flowmobile", "flow_settings.json")
+PRESERVED_DATA_NAME = ".flowmobile-data"
 PROFILE_START = "# >>> FlowMobile launcher >>>"
 PROFILE_END = "# <<< FlowMobile launcher <<<"
 
@@ -184,7 +185,12 @@ def install(
         source = _find_source(work_directory)
 
         _clean_installations(
-            [app_directory, documents / "FlowIOS", documents / "FlowApp"],
+            [
+                documents / PRESERVED_DATA_NAME,
+                app_directory,
+                documents / "FlowIOS",
+                documents / "FlowApp",
+            ],
             preserved,
         )
 

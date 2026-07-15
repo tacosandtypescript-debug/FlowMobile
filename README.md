@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.5.2**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.5.3**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -148,7 +148,8 @@ historial, ajustes, cookies y colas. En **Herramientas y ajustes → Desinstalar
 FlowMobile** existen dos opciones:
 
 - **Conservar datos:** elimina el programa y el comando `flow`, pero deja los
-  datos preparados para una instalación futura.
+  datos en una reserva privada `.flowmobile-data`, fuera de la carpeta del
+  programa. El instalador los restaura automáticamente en una instalación futura.
 - **Borrar absolutamente todo:** elimina programa, lanzadores, descargas,
   cookies, colas, historial y ajustes. Requiere escribir `BORRAR` exactamente.
 

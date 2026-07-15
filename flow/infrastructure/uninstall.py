@@ -12,12 +12,14 @@ from flow.infrastructure.platform import PLATFORM, PlatformInfo
 PROFILE_START = "# >>> FlowMobile launcher >>>"
 PROFILE_END = "# <<< FlowMobile launcher <<<"
 PRESERVED_ITEMS = {"Downloads", ".flowmobile", "flow_settings.json"}
+PRESERVED_DATA_NAME = ".flowmobile-data"
 
 
 @dataclass(slots=True)
 class UninstallResult:
     removed: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    preserved_at: str | None = None
 
     @property
     def ok(self) -> bool:
@@ -65,14 +67,64 @@ def remove_profile_launcher(documents: Path) -> bool:
 
 
 def _remove_path(path: Path, result: UninstallResult) -> None:
+    existed = path.exists() or path.is_symlink()
     try:
         if path.is_dir() and not path.is_symlink():
             shutil.rmtree(path)
         else:
             path.unlink(missing_ok=True)
-        result.removed.append(str(path))
     except OSError as exc:
         result.errors.append(f"{path}: {exc}")
+        return
+    if path.exists() or path.is_symlink():
+        result.errors.append(f"{path}: el sistema no confirmó la eliminación")
+    elif existed:
+        result.removed.append(str(path))
+
+
+def preserved_data_directory(app_directory: Path) -> Path:
+    """Reserva privada usada al quitar el código sin borrar datos personales."""
+    return app_directory.parent / PRESERVED_DATA_NAME
+
+
+def _available_destination(path: Path) -> Path:
+    if not path.exists():
+        return path
+    counter = 1
+    while True:
+        candidate = path.with_name(f"{path.stem}.conservado-{counter}{path.suffix}")
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
+def _move_preserving(source: Path, destination: Path, result: UninstallResult) -> None:
+    """Mueve datos sin sobrescribir archivos conservados por un intento anterior."""
+    try:
+        if source.is_dir() and not source.is_symlink() and destination.is_dir():
+            for child in list(source.iterdir()):
+                _move_preserving(child, destination / child.name, result)
+            source.rmdir()
+            return
+        target = _available_destination(destination)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(target))
+    except OSError as exc:
+        result.errors.append(f"{source}: no se pudo conservar: {exc}")
+
+
+def _preserve_personal_data(
+    app_directory: Path,
+    destination: Path,
+    result: UninstallResult,
+) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    for name in PRESERVED_ITEMS:
+        source = app_directory / name
+        if source.exists() or source.is_symlink():
+            _move_preserving(source, destination / name, result)
+    if not result.errors:
+        result.preserved_at = str(destination)
 
 
 def _validate_app_directory(app_directory: Path) -> Path:
@@ -128,16 +180,19 @@ def uninstall(
 
     download_directory = download_directory.resolve()
     download_is_inside_app = download_directory == app_directory / "Downloads"
+    preserved_directory = preserved_data_directory(app_directory)
     if purge_all:
         if not download_is_inside_app and download_directory.exists():
             if download_directory.name != "FlowMobile":
                 raise ValueError("FlowMobile se negó a borrar una carpeta de descargas no reconocida.")
             _remove_path(download_directory, result)
+        if preserved_directory.exists() or preserved_directory.is_symlink():
+            _remove_path(preserved_directory, result)
         _remove_path(app_directory, result)
         return result
 
-    for child in list(app_directory.iterdir()):
-        if child.name in PRESERVED_ITEMS:
-            continue
-        _remove_path(child, result)
+    _preserve_personal_data(app_directory, preserved_directory, result)
+    if result.errors:
+        return result
+    _remove_path(app_directory, result)
     return result

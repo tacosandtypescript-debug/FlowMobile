@@ -90,6 +90,24 @@ class InstallerCompatibilityTests(unittest.TestCase):
             self.assertTrue((destination / "Downloads" / "actual.txt").is_file())
             self.assertTrue((destination / "Downloads" / "anterior.txt").is_file())
 
+    def test_ios_installer_restores_data_saved_by_uninstaller(self):
+        with TemporaryDirectory() as temporary:
+            documents = Path(temporary)
+            saved = documents / ".flowmobile-data"
+            (saved / "Downloads").mkdir(parents=True)
+            (saved / ".flowmobile").mkdir()
+            (saved / "Downloads" / "video.mp4").write_bytes(b"video")
+            (saved / ".flowmobile" / "settings.json").write_text("{}")
+            preserved = documents / "temporary" / "preserved"
+
+            _clean_installations([saved], preserved)
+            destination = documents / "FlowMobile"
+            _restore_preserved(preserved, destination)
+
+            self.assertFalse(saved.exists())
+            self.assertTrue((destination / "Downloads" / "video.mp4").is_file())
+            self.assertTrue((destination / ".flowmobile" / "settings.json").is_file())
+
 
 if __name__ == "__main__":
     unittest.main()

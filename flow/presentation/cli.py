@@ -883,7 +883,9 @@ class FlowCLI:
         if purge_all:
             print(f"{GRAY}También se eliminaron todos los datos y descargas.{RESET}")
         else:
-            print(f"{GRAY}Tus datos quedaron preparados para una futura reinstalación.{RESET}")
+            print(f"{GRAY}La carpeta del programa también fue eliminada.{RESET}")
+            if result.preserved_at:
+                print(f"{GRAY}Datos para reinstalar: {result.preserved_at}{RESET}")
         print(f"{GRAY}Cierra esta ventana de terminal. El comando flow ya no estará disponible.{RESET}")
         raise SystemExit(0)
 

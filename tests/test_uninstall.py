@@ -40,9 +40,11 @@ class UninstallTests(unittest.TestCase):
             result = uninstall(False, app, app / "Downloads", platform, root)
 
             self.assertTrue(result.ok)
-            self.assertFalse((app / "main.py").exists())
-            self.assertTrue((app / "Downloads" / "video.mp4").exists())
-            self.assertTrue((app / ".flowmobile" / "settings.json").exists())
+            self.assertFalse(app.exists())
+            saved = documents / ".flowmobile-data"
+            self.assertEqual(result.preserved_at, str(saved))
+            self.assertTrue((saved / "Downloads" / "video.mp4").exists())
+            self.assertTrue((saved / ".flowmobile" / "settings.json").exists())
             self.assertFalse((documents / "bin" / "flow.py").exists())
 
     def test_complete_uninstall_removes_app_and_shared_downloads(self):
@@ -51,11 +53,14 @@ class UninstallTests(unittest.TestCase):
             documents = root / "Documents"
             app = documents / "FlowMobile"
             shared = root / "shared" / "FlowMobile"
+            saved = documents / ".flowmobile-data"
             (app / "flow").mkdir(parents=True)
             shared.mkdir(parents=True)
+            saved.mkdir(parents=True)
             (documents / "bin").mkdir()
             (app / "main.py").write_text("print('flow')", encoding="utf-8")
             (shared / "audio.m4a").write_bytes(b"audio")
+            (saved / "old.txt").write_text("old", encoding="utf-8")
             platform = PlatformInfo("ashell", "a-Shell", "iOS")
 
             result = uninstall(True, app, shared, platform, root)
@@ -63,6 +68,7 @@ class UninstallTests(unittest.TestCase):
             self.assertTrue(result.ok)
             self.assertFalse(app.exists())
             self.assertFalse(shared.exists())
+            self.assertFalse(saved.exists())
 
 
 if __name__ == "__main__":

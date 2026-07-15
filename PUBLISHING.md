@@ -10,7 +10,7 @@
 
 ## Qué no se sube
 
-- `Downloads/`, el historial, los ajustes y `.flowmobile/`.
+- `Downloads/`, el historial, los ajustes, `.flowmobile/` y `.flowmobile-data/`.
 - `.flowmobile-source` y `.flowios-source`, porque se crean al instalar.
 - Cookies, sesiones de yt-dlp, archivos `.env`, tokens o secretos.
 - Entornos Python, cachés, cobertura, registros y archivos temporales.
@@ -41,7 +41,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Mejorar aviso de bloqueo de TikTok 7.5.2"
+git commit -m "Corregir desinstalación y restauración de datos 7.5.3"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -67,7 +67,7 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 68
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 69
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
