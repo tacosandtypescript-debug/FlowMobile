@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 7.3.4 — 2026-07-15
+
+- Limpieza automática de aliases `flow` que todavía apuntaban a `FlowApp`.
+- Registro persistente del alias correcto hacia `FlowMobile/main.py`.
+- Aviso para descargar el alias antiguo que siga activo en la ventana actual.
+- Prueba de regresión para impedir que reaparezca la ruta heredada.
+
 ## 7.3.3 — 2026-07-15
 
 - Instalador de a-Shell reescrito en Python para no depender de `sh`/`dash`.

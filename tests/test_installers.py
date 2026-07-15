@@ -29,6 +29,12 @@ class InstallerCompatibilityTests(unittest.TestCase):
         ).splitlines()[0]
         self.assertEqual(first_line, "#!/usr/bin/env python3")
 
+    def test_ios_installer_replaces_legacy_flow_aliases(self):
+        content = (ROOT / "install_ios.py").read_text(encoding="utf-8")
+        self.assertIn("def _configure_profile(", content)
+        self.assertIn('alias flow=\'python3', content)
+        self.assertIn('r"^\\s*alias\\s+flow\\s*="', content)
+
 
 if __name__ == "__main__":
     unittest.main()

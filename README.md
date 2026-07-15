@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.3.3**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.3.4**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 ## Instalación en a-Shell
@@ -18,6 +18,10 @@ Se requiere la aplicación **a-Shell completa** abierta directamente. El
 instalador se ejecuta con Python para no abrir el entorno aislado `dash`, que no
 puede acceder a los comandos internos de a-Shell. a-Shell mini y la extensión
 ligera de Atajos no incluyen el entorno Python necesario.
+
+El instalador reemplaza aliases antiguos que todavía apunten a `FlowApp` o
+`FlowIOS`. Si el alias anterior sigue cargado en la ventana actual, ejecuta una
+vez `unalias flow` o abre una ventana nueva antes de escribir `flow`.
 
 ## Instalación en Termux
 

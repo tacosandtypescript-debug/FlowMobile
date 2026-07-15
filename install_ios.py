@@ -21,6 +21,8 @@ from urllib.request import Request, urlopen
 DEFAULT_REPOSITORY = "tacosandtypescript-debug/FlowMobile"
 REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 PRESERVED_ITEMS = ("Downloads", ".flowmobile", "flow_settings.json")
+PROFILE_START = "# >>> FlowMobile launcher >>>"
+PROFILE_END = "# <<< FlowMobile launcher <<<"
 
 
 def documents_directory(home: Path | None = None) -> Path:
@@ -71,6 +73,42 @@ def _install_python_dependencies() -> None:
     )
     if status:
         raise RuntimeError("pip no pudo instalar yt-dlp y yt-dlp-ejs.")
+
+
+def _configure_profile(documents: Path, app_directory: Path) -> None:
+    """Sustituye aliases antiguos sin alterar otras preferencias de a-Shell."""
+    profile = documents / ".profile"
+    try:
+        previous = profile.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        previous = ""
+
+    cleaned: list[str] = []
+    inside_flowmobile_block = False
+    for line in previous.splitlines():
+        stripped = line.strip()
+        if stripped == PROFILE_START:
+            inside_flowmobile_block = True
+            continue
+        if stripped == PROFILE_END:
+            inside_flowmobile_block = False
+            continue
+        if inside_flowmobile_block:
+            continue
+        if re.match(r"^\s*alias\s+flow\s*=", line):
+            continue
+        cleaned.append(line)
+
+    target = str(app_directory / "main.py").replace("'", "'\"'\"'")
+    content = "\n".join(cleaned).rstrip()
+    if content:
+        content += "\n\n"
+    content += (
+        f"{PROFILE_START}\n"
+        f"alias flow='python3 \"{target}\"'\n"
+        f"{PROFILE_END}\n"
+    )
+    profile.write_text(content, encoding="utf-8")
 
 
 def install(
@@ -133,11 +171,14 @@ def install(
         launcher = bin_directory / "flow"
         shutil.copy2(app_directory / "scripts" / "flow_ios.py", launcher)
         launcher.chmod(launcher.stat().st_mode | 0o111)
+        _configure_profile(documents, app_directory)
         _install_python_dependencies()
     finally:
         shutil.rmtree(work_directory, ignore_errors=True)
 
-    print("FlowMobile instalado para iOS. Escribe: flow")
+    print("FlowMobile instalado para iOS.")
+    print("Si flow apuntaba a FlowApp, ejecuta una vez: unalias flow")
+    print("Después escribe: flow")
     return app_directory
 
 
