@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 from flow.domain.formatting import format_bytes
 from flow.infrastructure.device import open_share
@@ -11,8 +11,27 @@ from flow.infrastructure.settings import save_settings
 from flow.infrastructure.uninstall import uninstall
 from flow.presentation.theme import *
 
+if TYPE_CHECKING:
+    from flow.presentation.cli import FlowCLI
 
-def show_sessions(cli: Any) -> None:
+
+def show_sessions(cli: "FlowCLI") -> None:
+    def _import() -> None:
+        raw_path = cli.read_input("Ruta del archivo cookies.txt › ").strip().strip("\"'")
+        try:
+            imported = import_cookies(Path(raw_path))
+            print(f"{GREEN}✓ {imported.cookies} cookies guardadas de forma privada.{RESET}")
+        except ValueError as exc:
+            print(f"{RED}{exc}{RESET}")
+        cli.pause()
+
+    def _remove() -> None:
+        confirm = cli.prompt_choice("¿Eliminar cookies? [1] Sí  [2] No", {"1", "2"})
+        if confirm == "1":
+            remove_cookies()
+            print(f"{GREEN}Sesión eliminada.{RESET}")
+            cli.pause()
+
     while True:
         cli.logo("COOKIES Y SESIONES")
         status = session_status()
@@ -29,49 +48,28 @@ def show_sessions(cli: Any) -> None:
         if choice == "0":
             return
         if choice == "1":
-            raw_path = cli.read_input("Ruta del archivo cookies.txt › ").strip().strip("\"'")
-            try:
-                imported = import_cookies(Path(raw_path))
-                print(f"{GREEN}✓ {imported.cookies} cookies guardadas de forma privada.{RESET}")
-            except ValueError as exc:
-                print(f"{RED}{exc}{RESET}")
-            cli.pause()
+            _import()
         elif choice == "2":
-            confirm = cli.prompt_choice("¿Eliminar cookies? [1] Sí  [2] No", {"1", "2"})
-            if confirm == "1":
-                remove_cookies()
-                print(f"{GREEN}Sesión eliminada.{RESET}")
-                cli.pause()
+            _remove()
 
 
-def show_tools(cli: Any) -> None:
-    while True:
-        with cli.buffered_screen():
-            cli.logo("HERRAMIENTAS")
-            cli.menu_item("1", "Cookies y sesiones")
-            cli.menu_item("2", "Sistema")
-            cli.menu_item("3", "Modo Reparar")
-            cli.menu_item("4", "Ajustes")
-            cli.menu_item("5", "Pruebas reales")
-            cli.menu_item("6", "Informe de diagnóstico", "privado y preparado para compartir")
-            cli.menu_item("7", "Desinstalar FlowMobile")
-            cli.menu_item("0", "Volver")
-        choice = cli.prompt_choice("Selecciona", {"0", "1", "2", "3", "4", "5", "6", "7"})
-        if choice == "0":
-            return
-        actions = {
-            "1": cli.show_sessions,
-            "2": cli.show_system,
-            "3": cli.show_repair,
-            "4": cli.show_settings,
-            "5": cli.show_real_tests,
-            "6": cli.show_diagnostic,
-            "7": cli.show_uninstall,
-        }
-        actions[choice]()
+def show_tools(cli: "FlowCLI") -> None:
+    cli.ui.run_menu(
+        "HERRAMIENTAS",
+        {
+            "1": ("Cookies y sesiones", "", cli.show_sessions),
+            "2": ("Sistema", "", cli.show_system),
+            "3": ("Modo Reparar", "", cli.show_repair),
+            "4": ("Ajustes", "", cli.show_settings),
+            "5": ("Pruebas reales", "", cli.show_real_tests),
+            "6": ("Informe de diagnóstico", "privado y preparado para compartir", cli.show_diagnostic),
+            "7": ("Desinstalar FlowMobile", "", cli.show_uninstall),
+        },
+        tools_status=cli._tools_status,
+    )
 
 
-def show_diagnostic(cli: Any) -> None:
+def show_diagnostic(cli: "FlowCLI") -> None:
     cli.logo("INFORME DE DIAGNÓSTICO")
     try:
         report = save_diagnostic_report()
@@ -87,7 +85,7 @@ def show_diagnostic(cli: Any) -> None:
     cli.pause()
 
 
-def show_uninstall(cli: Any) -> None:
+def show_uninstall(cli: "FlowCLI") -> None:
     cli.logo("DESINSTALAR FLOWMOBILE")
     print(f"{YELLOW}Esta acción elimina el comando flow y el código instalado.{RESET}\n")
     cli.menu_item("1", "Desinstalar y conservar datos", "mantiene descargas, historial, colas y cookies")
@@ -136,9 +134,41 @@ def show_uninstall(cli: Any) -> None:
     raise SystemExit(0)
 
 
-def show_settings(cli: Any) -> None:
+def show_settings(cli: "FlowCLI") -> None:
     kind_labels = {"ask": "Preguntar siempre", "video": "Video", "audio": "Solo audio"}
     audio_labels = {"auto": "Automático", "m4a": "M4A", "mp3": "MP3"}
+
+    def _choose_quality() -> None:
+        quality_options = {
+            "1": ("best", "Mejor"),
+            "2": ("2160", "2160p"),
+            "3": ("1440", "1440p"),
+            "4": ("1080", "1080p"),
+            "5": ("720", "720p"),
+            "6": ("480", "480p"),
+            "7": ("360", "360p"),
+        }
+        print("\n[1] Mejor  [2] 2160p  [3] 1440p  [4] 1080p")
+        print("[5] 720p   [6] 480p   [7] 360p")
+        value = cli.prompt_choice("Calidad máxima", set(quality_options) | {"0"})
+        if value in quality_options:
+            cli.settings.video_quality = quality_options[value][0]
+
+    def _choose_format() -> None:
+        print("\n[1] Preguntar siempre  [2] Video  [3] Solo audio")
+        value = cli.prompt_choice("Formato", {"1", "2", "3"})
+        cli.settings.default_kind = {"1": "ask", "2": "video", "3": "audio"}[value]
+
+    def _choose_audio() -> None:
+        print("\n[1] Automático recomendado  [2] M4A  [3] MP3")
+        value = cli.prompt_choice("Formato de audio", {"1", "2", "3"})
+        cli.settings.audio_format = {"1": "auto", "2": "m4a", "3": "mp3"}[value]
+
+    def _toggle_updates() -> None:
+        print("\n[1] Comprobar en cada inicio  [2] Desactivar")
+        value = cli.prompt_choice("Actualizaciones", {"1", "2"})
+        cli.settings.auto_updates = value == "1"
+
     while True:
         cli.logo("AJUSTES")
         quality = (
@@ -161,25 +191,13 @@ def show_settings(cli: Any) -> None:
         if choice == "0":
             return
         if choice == "1":
-            print("\n[1] Preguntar siempre  [2] Video  [3] Solo audio")
-            value = cli.prompt_choice("Formato", {"1", "2", "3"})
-            cli.settings.default_kind = {"1": "ask", "2": "video", "3": "audio"}[value]
+            _choose_format()
         elif choice == "2":
-            print("\n[1] Mejor  [2] 2160p  [3] 1440p  [4] 1080p")
-            print("[5] 720p   [6] 480p   [7] 360p")
-            value = cli.prompt_choice("Calidad máxima", {str(i) for i in range(1, 8)})
-            cli.settings.video_quality = {
-                "1": "best", "2": "2160", "3": "1440", "4": "1080",
-                "5": "720", "6": "480", "7": "360",
-            }[value]
+            _choose_quality()
         elif choice == "3":
-            print("\n[1] Automático recomendado  [2] M4A  [3] MP3")
-            value = cli.prompt_choice("Formato de audio", {"1", "2", "3"})
-            cli.settings.audio_format = {"1": "auto", "2": "m4a", "3": "mp3"}[value]
+            _choose_audio()
         elif choice == "4":
-            print("\n[1] Comprobar en cada inicio  [2] Desactivar")
-            value = cli.prompt_choice("Actualizaciones", {"1", "2"})
-            cli.settings.auto_updates = value == "1"
+            _toggle_updates()
         elif choice == "5":
             cli.settings.clipboard_detection = not cli.settings.clipboard_detection
         elif choice == "6":

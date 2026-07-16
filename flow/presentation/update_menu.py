@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import threading
-from typing import Any
+from typing import TYPE_CHECKING
 
 import yt_dlp
 
@@ -11,6 +11,7 @@ from flow.infrastructure.ffmpeg import tools_status
 from flow.infrastructure.platform import PLATFORM
 from flow.infrastructure.settings import save_settings
 from flow.infrastructure.updates import (
+    UpdateResult,
     check_available_updates,
     is_newer,
     update_ffmpeg,
@@ -19,8 +20,12 @@ from flow.infrastructure.updates import (
 )
 from flow.presentation.theme import *
 
+if TYPE_CHECKING:
+    from flow.infrastructure.updates import UpdateCheck
+    from flow.presentation.cli import FlowCLI
 
-def record_update_check(cli: Any, check: Any) -> tuple[bool, bool, bool, bool]:
+
+def record_update_check(cli: "FlowCLI", check: "UpdateCheck") -> tuple[bool, bool, bool, bool]:
     flow_pending = is_newer(check.flow_latest, APP_VERSION)
     if flow_pending:
         cli.flow_update_version = check.flow_latest
@@ -50,7 +55,64 @@ def record_update_check(cli: Any, check: Any) -> tuple[bool, bool, bool, bool]:
     return flow_pending, ytdlp_pending, ffmpeg_available, ffprobe_available
 
 
-def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> None:
+def _print_tool_status(name: str, available: bool) -> None:
+    color = GREEN if available else YELLOW
+    mark = "✓" if available else "!"
+    status = "disponible" if available else "no encontrado"
+    print(f"{color}{mark} {name} {status}{RESET}")
+
+
+def _print_version_line(
+    label: str,
+    pending: bool,
+    current: str,
+    latest: str | None,
+) -> None:
+    if latest is None:
+        print(f"{YELLOW}! No se pudo verificar la versión de {label}.{RESET}")
+    elif pending:
+        print(f"{YELLOW}! {label} {latest} disponible (actual {current}).{RESET}")
+    else:
+        print(f"{GREEN}✓ {label} {current}{RESET}")
+
+
+def _perform_updates(
+    cli: "FlowCLI",
+    ytdlp_pending: bool,
+    ffmpeg_pending: bool,
+    termux_tools_missing: bool,
+    repository: str | None,
+    flow_ref: str | None,
+) -> None:
+    if ytdlp_pending:
+        print(f"{CYAN}Actualizando yt-dlp y EJS…{RESET}")
+        result = update_ytdlp()
+        if result.ok:
+            print(f"{GREEN}✓ yt-dlp actualizado.{RESET}")
+        else:
+            print(f"{RED}✗ No se pudo actualizar yt-dlp: {result.detail}{RESET}")
+
+    if ffmpeg_pending or termux_tools_missing:
+        action = "Instalando" if termux_tools_missing else "Actualizando"
+        print(f"{CYAN}{action} FFmpeg desde Termux…{RESET}")
+        result = update_ffmpeg()
+        if result.ok:
+            print(f"{GREEN}✓ FFmpeg preparado.{RESET}")
+        else:
+            print(f"{RED}✗ No se pudo preparar FFmpeg: {result.detail}{RESET}")
+
+    if repository and cli.flow_update_version:
+        print(f"{CYAN}Actualizando FlowMobile con respaldo automático…{RESET}")
+        result = update_flowmobile(repository, flow_ref or "main")
+        if result.ok:
+            print(f"{GREEN}✓ FlowMobile actualizado. Vuelve a ejecutar: flow{RESET}")
+            cli.pause()
+            raise SystemExit(0)
+        print(f"{RED}✗ No se pudo actualizar FlowMobile: {result.detail}{RESET}")
+        print(f"{GRAY}La versión anterior se conserva cuando el instalador falla.{RESET}")
+
+
+def check_updates(cli: "FlowCLI", force: bool = False, interactive: bool = False) -> None:
     if not force and not cli.settings.auto_updates:
         return
     cli.logo("COMPROBAR ACTUALIZACIONES")
@@ -61,9 +123,7 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
             cli.record_update_check(check)
         )
     ffmpeg_pending = check.ffmpeg_pending
-    termux_tools_missing = PLATFORM.is_termux and not (
-        ffmpeg_available and ffprobe_available
-    )
+    termux_tools_missing = PLATFORM.is_termux and not (ffmpeg_available and ffprobe_available)
 
     if check.repository is None:
         print(f"{YELLOW}! FlowMobile: repositorio de GitHub sin configurar.{RESET}")
@@ -79,27 +139,12 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
             print(f"{GRAY}Hay una nueva versión lista para instalar.{RESET}")
     else:
         print(f"{GREEN}✓ FlowMobile {APP_VERSION}{RESET}")
-    if check.ytdlp_latest is None:
-        print(f"{YELLOW}! No se pudo verificar la versión de yt-dlp.{RESET}")
-    elif ytdlp_pending:
-        print(
-            f"{YELLOW}! yt-dlp {check.ytdlp_latest} disponible "
-            f"(actual {yt_dlp.version.__version__}).{RESET}"
-        )
-    else:
-        print(f"{GREEN}✓ yt-dlp {yt_dlp.version.__version__}{RESET}")
-    print(
-        f"{GREEN if ffmpeg_available else YELLOW}"
-        f"{'✓' if ffmpeg_available else '!'} FFmpeg "
-        f"{'disponible' if ffmpeg_available else 'no disponible'}{RESET}"
-    )
+
+    _print_version_line("yt-dlp", ytdlp_pending, yt_dlp.version.__version__, check.ytdlp_latest)
+    _print_tool_status("FFmpeg", ffmpeg_available)
     if ffmpeg_pending:
         print(f"{YELLOW}! Termux tiene una actualización de FFmpeg disponible.{RESET}")
-    print(
-        f"{GREEN if ffprobe_available else YELLOW}"
-        f"{'✓' if ffprobe_available else '!'} FFprobe "
-        f"{'disponible' if ffprobe_available else 'no disponible'}{RESET}"
-    )
+    _print_tool_status("FFprobe", ffprobe_available)
 
     if check.error:
         print(f"{YELLOW}No se pudo verificar todo: {check.error[:180]}{RESET}")
@@ -111,34 +156,7 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
             print(f"{GRAY}La actualización se volverá a ofrecer al abrir FlowMobile.{RESET}")
             cli.pause()
             return
-
-        if ytdlp_pending:
-            print(f"{CYAN}Actualizando yt-dlp y EJS…{RESET}")
-            result = update_ytdlp()
-            if result.ok:
-                print(f"{GREEN}✓ yt-dlp actualizado.{RESET}")
-            else:
-                print(f"{RED}✗ No se pudo actualizar yt-dlp: {result.detail}{RESET}")
-
-        if ffmpeg_pending or termux_tools_missing:
-            action = "Instalando" if termux_tools_missing else "Actualizando"
-            print(f"{CYAN}{action} FFmpeg desde Termux…{RESET}")
-            result = update_ffmpeg()
-            if result.ok:
-                print(f"{GREEN}✓ FFmpeg preparado.{RESET}")
-            else:
-                print(f"{RED}✗ No se pudo preparar FFmpeg: {result.detail}{RESET}")
-
-        if flow_pending and check.repository:
-            print(f"{CYAN}Actualizando FlowMobile con respaldo automático…{RESET}")
-            result = update_flowmobile(check.repository, check.flow_ref or "main")
-            if result.ok:
-                print(f"{GREEN}✓ FlowMobile actualizado. Vuelve a ejecutar: flow{RESET}")
-                cli.pause()
-                raise SystemExit(0)
-            print(f"{RED}✗ No se pudo actualizar FlowMobile: {result.detail}{RESET}")
-            print(f"{GRAY}La versión anterior se conserva cuando el instalador falla.{RESET}")
-
+        _perform_updates(cli, ytdlp_pending, ffmpeg_pending, termux_tools_missing, check.repository, check.flow_ref)
         print(f"{GRAY}Reabre FlowMobile para cargar las herramientas nuevas.{RESET}")
         cli.pause()
     elif interactive:
@@ -151,7 +169,7 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
         cli.pause()
 
 
-def start_background_update_check(cli: Any) -> None:
+def start_background_update_check(cli: "FlowCLI") -> None:
     """Comprueba Internet sin impedir que aparezca el menú principal."""
     if cli.update_check_running:
         return

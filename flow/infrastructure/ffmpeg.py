@@ -1,10 +1,11 @@
 from __future__ import annotations
-from pathlib import Path
-from functools import lru_cache
 from collections import deque
 from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
 import json
 import subprocess
+import threading
 from typing import Callable
 
 
@@ -179,26 +180,37 @@ def convert_video(
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.PIPE,
         text=True,
     )
 
-    total = float(duration or 0)
     output_tail: deque[str] = deque(maxlen=20)
+
+    def _drain_stderr() -> None:
+        if process.stderr is not None:
+            for line in process.stderr:
+                clean = line.strip()
+                if clean:
+                    output_tail.append(clean)
+
+    stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
+    stderr_thread.start()
+
+    total = float(duration or 0)
     if process.stdout is not None:
         for raw in process.stdout:
             line = raw.strip()
             if not line.startswith(("out_time_ms=", "out_time_us=")):
-                if line and "=" not in line:
-                    output_tail.append(line)
                 continue
             try:
                 seconds = int(line.split("=", 1)[1]) / 1_000_000
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, IndexError):
                 continue
             progress_callback(min(100.0, seconds / total * 100) if total else 0.0)
 
     code = process.wait()
+    stderr_thread.join()
+
     if code != 0 or not temp.exists():
         temp.unlink(missing_ok=True)
         detail = "\n".join(output_tail)

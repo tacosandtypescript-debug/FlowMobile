@@ -1,6 +1,5 @@
 from __future__ import annotations
-from contextlib import contextmanager, redirect_stdout
-from io import StringIO
+from contextlib import contextmanager
 import os
 import shutil
 import subprocess
@@ -21,7 +20,6 @@ from flow.application.real_tests import (
     verify_download,
 )
 from flow.domain.cancellation import DownloadCancelled, cancellation_requested
-from flow.domain.errors import friendly_error
 from flow.domain.formatting import format_bytes, format_time
 from flow.domain.models import DownloadChoice, MediaInfo
 from flow.domain.progress import DownloadProgress
@@ -46,6 +44,7 @@ from flow.infrastructure.repair import (
 )
 from flow.infrastructure.settings import load_settings
 from flow.presentation.theme import *
+from flow.presentation.ui import ConsoleUI
 from flow.presentation.tools_menu import (
     show_diagnostic as run_diagnostic_menu,
     show_sessions as run_sessions_menu,
@@ -65,106 +64,51 @@ class FlowCLI:
         self.service = MediaService()
         self.settings = load_settings()
         self.download_progress = DownloadProgress()
+        self.ui = ConsoleUI(self.settings)
         self.flow_update_version: str | None = None
         self.flow_release_notes: tuple[str, ...] = ()
         self.update_check_running = False
         self._update_lock = threading.Lock()
         self._tools_status: tuple[bool, bool] | None = None
-        self._last_accessible_progress = -10
 
     def clear(self) -> None:
-        mode = getattr(getattr(self, "settings", None), "interface_mode", "compact")
-        if mode == "accessible":
-            print("\n\n", end="", flush=True)
-        else:
-            print("\033[2J\033[H", end="", flush=True)
+        self.ui.clear()
 
     @contextmanager
     def buffered_screen(self):
         """Entrega la pantalla en un solo bloque para evitar tirones en a-Shell."""
-        buffer = StringIO()
-        with redirect_stdout(buffer):
+        with self.ui.buffered_screen():
             yield
-        sys.stdout.write(buffer.getvalue())
-        sys.stdout.flush()
 
     def line(self, width: int = 38) -> str:
-        return "─" * width
+        return self.ui.line(width)
 
     def logo(self, title: str) -> None:
-        self.clear()
-        current_tools = self._tools_status
-        tools_ok = bool(current_tools and all(current_tools))
-        if current_tools is None:
-            status_color, status_label = CYAN, "VERIFICANDO SISTEMA"
-        elif tools_ok:
-            status_color, status_label = GREEN, "SISTEMA LISTO"
-        else:
-            status_color, status_label = YELLOW, "REVISAR HERRAMIENTAS"
-        print(f"{MAGENTA}{BOLD}{APP_NAME}{RESET}")
-        print(f"{GRAY}{PLATFORM.mobile_os} · {PLATFORM.name} · v{APP_VERSION}{RESET}")
-        print(f"{CYAN}{self.line()}{RESET}")
-        print(
-            f"{status_color}● {status_label}{RESET}  "
-            f"{GRAY}yt-dlp{RESET} {CYAN}{yt_dlp.version.__version__}{RESET}"
-        )
-        print()
-        print(f"{WHITE}{BOLD}{title}{RESET}")
-        print(f"{CYAN}{self.line()}{RESET}")
+        self.ui.logo(title, tools_status=self._tools_status)
 
     def pause(self) -> None:
-        self.read_input(f"\n{GRAY}Presiona Enter para continuar...{RESET}")
+        self.ui.pause()
 
     def read_input(self, prompt: str) -> str:
-        try:
-            return input(prompt)
-        except EOFError:
-            print(
-                f"\n{YELLOW}La entrada interactiva no está disponible. "
-                f"Abre una ventana nueva de a-Shell y ejecuta flow.{RESET}"
-            )
-            raise SystemExit(0) from None
+        return self.ui.read_input(prompt)
 
     def menu_item(self, number: str, title: str, detail: str = "") -> None:
-        print(f"{CYAN}{BOLD}[{number}]{RESET} {WHITE}{BOLD}{title}{RESET}")
-        if detail:
-            print(f"    {GRAY}{detail}{RESET}")
+        self.ui.menu_item(number, title, detail)
 
     def section(self, title: str) -> None:
-        print(f"\n{MAGENTA}{BOLD}{title}{RESET}")
+        self.ui.section(title)
 
     def prompt_choice(self, prompt: str, valid: set[str]) -> str:
-        normalized = {value.lower() for value in valid}
-        while True:
-            choice = self.read_input(
-                f"\n{WHITE}{prompt}{RESET} {CYAN}›{RESET} "
-            ).strip().lower()
-            if choice in normalized:
-                return choice
-            options = ", ".join(
-                sorted(
-                    normalized,
-                    key=lambda value: (
-                        not value.isdigit(),
-                        int(value) if value.isdigit() else value,
-                    ),
-                )
-            )
-            print(f"{YELLOW}Opción no válida. Usa: {options}.{RESET}")
+        return self.ui.prompt_choice(prompt, valid)
 
     def prompt_url(self, prompt: str = "Enlace › ") -> str:
-        if self.settings.clipboard_detection:
-            candidates = clipboard_urls()
-            if candidates:
-                candidate = candidates[0]
-                host = platform_name(candidate)
-                answer = self.read_input(
-                    f"{GREEN}Enlace de {host} detectado en el portapapeles.{RESET} "
-                    f"¿Usarlo? [S/n] › "
-                ).strip().casefold()
-                if answer in {"", "s", "si", "sí", "1"}:
-                    return candidate
-        return self.read_input(prompt).strip()
+        return self.ui.prompt_url(prompt)
+
+    def draw_progress(self, percent: float, speed: str, eta: str) -> None:
+        self.ui.draw_progress(percent, speed, eta)
+
+    def show_error(self, url: str, error: Exception) -> None:
+        self.ui.show_error(url, error)
 
     def dashboard(self) -> None:
         def folder_stats(folder: Path) -> tuple[int, int]:
@@ -235,24 +179,6 @@ class FlowCLI:
         row(f"Última: {last_title}", GRAY)
         print(f"{MAGENTA}╰{self.line(36)}╯{RESET}")
 
-    def draw_progress(self, percent: float, speed: str, eta: str) -> None:
-        if self.settings.interface_mode == "accessible":
-            step = min(100, int(percent // 10) * 10)
-            if step <= self._last_accessible_progress and percent < 100:
-                return
-            self._last_accessible_progress = step
-            print(f"Progreso {percent:.0f}% · {speed} · restante {eta}")
-            return
-        width = 12
-        filled = max(0, min(width, round(width * percent / 100)))
-        bar = "█" * filled + "░" * (width - filled)
-        print(
-            f"\r\033[2K{CYAN}[{GREEN}{bar}{CYAN}] "
-            f"{percent:5.1f}% {YELLOW}{speed} {MAGENTA}ETA {eta}{RESET}",
-            end="",
-            flush=True,
-        )
-
     def progress_hook(self, data: dict[str, Any]) -> None:
         status = data.get("status")
         if status == "downloading":
@@ -272,11 +198,6 @@ class FlowCLI:
 
     def conversion_progress(self, percent: float) -> None:
         self.draw_progress(percent, "Convirtiendo", "--:--")
-
-    def show_error(self, url: str, error: Exception) -> None:
-        title, hint = friendly_error(url, error)
-        print(f"{RED}{BOLD}{title}{RESET}")
-        print(f"{YELLOW}{hint}{RESET}")
 
     @staticmethod
     def featured_resolutions(resolutions: list[int]) -> list[int]:
@@ -462,7 +383,6 @@ class FlowCLI:
 
         print(f"\n{YELLOW}Cancelar conservando progreso: c + Enter o Ctrl+C.{RESET}")
         self.download_progress.reset()
-        self._last_accessible_progress = -10
         result = self.service.download(
             media,
             choice,
@@ -729,7 +649,6 @@ class FlowCLI:
 
             print(f"{CYAN}{media.title[:42]}{RESET}")
             self.download_progress.reset()
-            self._last_accessible_progress = -10
             result = self.service.download(
                 media,
                 queue.choice,
@@ -880,6 +799,22 @@ class FlowCLI:
 
     def run(self) -> None:
         self.start_background_update_check()
+
+        def _build_main_options() -> dict[str, tuple[str, str, Callable[[], None]]]:
+            update_label = (
+                f"¡FlowMobile {self.flow_update_version} disponible!"
+                if self.flow_update_version
+                else "Actualizaciones"
+            )
+            return {
+                "1": ("Nueva descarga", "", self.new_download),
+                "2": ("Lotes y playlists", "", self.show_batches),
+                "3": ("Historial", "", self.show_history),
+                "4": ("Mis archivos", "", self.show_files),
+                "5": (update_label, "", lambda: self.check_updates(force=True, interactive=True)),
+                "6": ("Herramientas y ajustes", "", self.show_tools_menu),
+            }
+
         while True:
             with self.buffered_screen():
                 self.logo("MENÚ PRINCIPAL")
@@ -891,13 +826,9 @@ class FlowCLI:
                 self.menu_item("3", "Historial")
                 self.menu_item("4", "Mis archivos")
                 self.section("NOVEDADES")
-                if self.flow_update_version:
-                    self.menu_item(
-                        "5",
-                        f"¡FlowMobile {self.flow_update_version} disponible!",
-                    )
-                else:
-                    self.menu_item("5", "Actualizaciones")
+                options = _build_main_options()
+                for key, (label, detail, _) in options.items():
+                    self.menu_item(key, label, detail)
                 self.section("CONFIGURACIÓN")
                 self.menu_item("6", "Herramientas y ajustes")
                 print()
@@ -905,24 +836,14 @@ class FlowCLI:
 
             choice = self.prompt_choice(
                 "Selecciona",
-                {"0", "1", "2", "3", "4", "5", "6"},
+                set(options) | {"0"},
             )
-            if choice == "1":
-                self.new_download()
-            elif choice == "2":
-                self.show_batches()
-            elif choice == "3":
-                self.show_history()
-            elif choice == "4":
-                self.show_files()
-            elif choice == "5":
-                self.check_updates(force=True, interactive=True)
-            elif choice == "6":
-                self.show_tools_menu()
-            elif choice == "0":
+            if choice == "0":
                 self.clear()
                 print("FlowMobile cerrado.")
                 return
+            action = options[choice][2]
+            action()
 
 
 def main() -> None:

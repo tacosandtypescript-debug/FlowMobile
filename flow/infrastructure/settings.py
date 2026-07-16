@@ -45,16 +45,21 @@ def load_settings() -> AppSettings:
         data = json.loads(source.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
             return AppSettings()
+        def _to_bool(value: object) -> bool:
+            return bool(value) if not isinstance(value, str) else value.lower() in {"true", "1", "yes"}
+
+        last_update_check = data.get("last_update_check")
+        last_update_ok = data.get("last_update_ok")
         return AppSettings(
             default_kind=str(data.get("default_kind", "ask")),
             video_quality=str(data.get("video_quality", "best")),
             audio_format=str(data.get("audio_format", "auto")),
-            auto_updates=data.get("auto_updates", True),
-            clipboard_detection=data.get("clipboard_detection", True),
-            colors=data.get("colors", True),
+            auto_updates=_to_bool(data.get("auto_updates", True)),
+            clipboard_detection=_to_bool(data.get("clipboard_detection", True)),
+            colors=_to_bool(data.get("colors", True)),
             interface_mode=str(data.get("interface_mode", "compact")),
-            last_update_check=data.get("last_update_check"),
-            last_update_ok=data.get("last_update_ok"),
+            last_update_check=str(last_update_check) if last_update_check is not None else None,
+            last_update_ok=None if last_update_ok is None else _to_bool(last_update_ok),
         ).normalize()
     except (OSError, UnicodeError, json.JSONDecodeError):
         return AppSettings()
