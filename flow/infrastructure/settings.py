@@ -19,6 +19,8 @@ class AppSettings:
     interface_mode: str = "compact"
     last_update_check: str | None = None
     last_update_ok: bool | None = None
+    last_flow_version: str | None = None
+    last_flow_release_notes: tuple[str, ...] = ()
 
     def normalize(self) -> "AppSettings":
         if self.default_kind not in {"ask", "video", "audio"}:
@@ -35,6 +37,16 @@ class AppSettings:
             self.colors = True
         if self.interface_mode not in {"compact", "accessible"}:
             self.interface_mode = "compact"
+        if not isinstance(self.last_flow_version, str) or not self.last_flow_version.strip():
+            self.last_flow_version = None
+        if not isinstance(self.last_flow_release_notes, (tuple, list)):
+            self.last_flow_release_notes = ()
+        else:
+            self.last_flow_release_notes = tuple(
+                str(note).strip()[:240]
+                for note in self.last_flow_release_notes[:5]
+                if str(note).strip()
+            )
         return self
 
 def load_settings() -> AppSettings:
@@ -55,6 +67,8 @@ def load_settings() -> AppSettings:
             interface_mode=str(data.get("interface_mode", "compact")),
             last_update_check=data.get("last_update_check"),
             last_update_ok=data.get("last_update_ok"),
+            last_flow_version=data.get("last_flow_version"),
+            last_flow_release_notes=data.get("last_flow_release_notes", ()),
         ).normalize()
     except (OSError, UnicodeError, json.JSONDecodeError):
         return AppSettings()

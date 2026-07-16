@@ -28,6 +28,9 @@ def record_update_check(cli: Any, check: Any) -> tuple[bool, bool, bool, bool]:
     elif check.flow_latest is not None:
         cli.flow_update_version = None
         cli.flow_release_notes = ()
+    if check.flow_latest is not None:
+        cli.settings.last_flow_version = check.flow_latest
+        cli.settings.last_flow_release_notes = check.release_notes
     ytdlp_pending = is_newer(check.ytdlp_latest, yt_dlp.version.__version__)
     ffmpeg_available, ffprobe_available = tools_status()
     cli._tools_status = (ffmpeg_available, ffprobe_available)
@@ -161,8 +164,14 @@ def start_background_update_check(cli: Any) -> None:
         try:
             with cli._update_lock:
                 if cli.settings.auto_updates:
+                    previous_version = cli.flow_update_version
                     check = check_available_updates(include_package_manager=False)
                     cli.record_update_check(check)
+                    if (
+                        cli.flow_update_version
+                        and cli.flow_update_version != previous_version
+                    ):
+                        cli.announce_background_update(cli.flow_update_version)
                 else:
                     cli._tools_status = tools_status()
         finally:

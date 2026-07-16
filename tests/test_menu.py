@@ -10,10 +10,36 @@ from flow.presentation.cli import FlowCLI
 class InteractiveMenuTests(unittest.TestCase):
     def test_runtime_state_is_initialized(self):
         with patch("flow.presentation.cli.MediaService"):
-            with patch("flow.presentation.cli.load_settings"):
+            settings = SimpleNamespace(
+                last_flow_version=None,
+                last_flow_release_notes=(),
+            )
+            with patch("flow.presentation.cli.load_settings", return_value=settings):
                 cli = FlowCLI()
         self.assertIsInstance(cli._update_lock, type(threading.Lock()))
         self.assertIsNone(cli._tools_status)
+
+    def test_cached_update_is_visible_before_background_check_finishes(self):
+        settings = SimpleNamespace(
+            last_flow_version="99.0.0",
+            last_flow_release_notes=("Cambio importante",),
+        )
+        with patch("flow.presentation.cli.MediaService"):
+            with patch("flow.presentation.cli.load_settings", return_value=settings):
+                cli = FlowCLI()
+        self.assertEqual(cli.flow_update_version, "99.0.0")
+        self.assertEqual(cli.flow_release_notes, ("Cambio importante",))
+
+    def test_late_background_update_prints_immediate_notice(self):
+        cli = FlowCLI.__new__(FlowCLI)
+        cli._announced_update_version = None
+        cli._menu_ready = threading.Event()
+        cli._menu_ready.set()
+        output = StringIO()
+        with patch.object(__import__("sys"), "__stdout__", output):
+            cli.announce_background_update("99.0.0")
+        self.assertIn("99.0.0 disponible", output.getvalue())
+        self.assertIn("[5] Actualizaciones", output.getvalue())
 
     def test_termux_without_public_storage_blocks_downloads(self):
         cli = FlowCLI.__new__(FlowCLI)

@@ -50,6 +50,7 @@ from flow.infrastructure.repair import (
     repair_dependencies,
 )
 from flow.infrastructure.settings import load_settings
+from flow.infrastructure.updates import is_newer
 from flow.presentation.theme import *
 from flow.presentation.tools_menu import (
     show_diagnostic as run_diagnostic_menu,
@@ -70,12 +71,32 @@ class FlowCLI:
         self.service = MediaService()
         self.settings = load_settings()
         self.download_progress = DownloadProgress()
-        self.flow_update_version: str | None = None
-        self.flow_release_notes: tuple[str, ...] = ()
+        cached_version = self.settings.last_flow_version
+        self.flow_update_version: str | None = (
+            cached_version if is_newer(cached_version, APP_VERSION) else None
+        )
+        self.flow_release_notes: tuple[str, ...] = (
+            self.settings.last_flow_release_notes if self.flow_update_version else ()
+        )
         self.update_check_running = False
         self._update_lock = threading.Lock()
         self._tools_status: tuple[bool, bool] | None = None
         self._last_accessible_progress = -10
+        self._menu_ready = threading.Event()
+        self._announced_update_version: str | None = self.flow_update_version
+
+    def announce_background_update(self, version: str) -> None:
+        """Avisa incluso si la consulta termina mientras input espera una opción."""
+        if self._announced_update_version == version:
+            return
+        self._announced_update_version = version
+        self._menu_ready.wait(timeout=5)
+        output = sys.__stdout__ or sys.stdout
+        output.write(
+            f"\n\a{YELLOW}{BOLD}! FlowMobile {version} disponible.{RESET}\n"
+            f"{CYAN}Selecciona [5] Actualizaciones para instalarla.{RESET}\n"
+        )
+        output.flush()
 
     def ensure_download_storage(self) -> bool:
         """Impide que Termux vuelva a ocultar descargas en sus datos privados."""
@@ -949,6 +970,7 @@ class FlowCLI:
                 print()
                 self.menu_item("0", "Salir")
 
+            self._menu_ready.set()
             choice = self.prompt_choice(
                 "Selecciona",
                 {"0", "1", "2", "3", "4", "5", "6"},

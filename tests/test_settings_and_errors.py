@@ -15,6 +15,14 @@ class SettingsTests(unittest.TestCase):
         settings = AppSettings(auto_updates="false").normalize()  # type: ignore[arg-type]
         self.assertTrue(settings.auto_updates)
 
+    def test_invalid_cached_update_values_are_safely_cleared(self):
+        settings = AppSettings(
+            last_flow_version=7,  # type: ignore[arg-type]
+            last_flow_release_notes="texto",  # type: ignore[arg-type]
+        ).normalize()
+        self.assertIsNone(settings.last_flow_version)
+        self.assertEqual(settings.last_flow_release_notes, ())
+
     def test_invalid_interface_preferences_use_private_safe_defaults(self):
         settings = AppSettings(
             clipboard_detection="no",  # type: ignore[arg-type]

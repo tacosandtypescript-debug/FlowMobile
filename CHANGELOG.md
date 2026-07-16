@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.6.11 — 2026-07-16
+
+- Aviso inmediato cuando GitHub responde después de que el menú ya fue dibujado.
+- Caché persistente de la versión disponible y sus novedades.
+- Aviso conservado entre inicios aunque una comprobación posterior falle por conexión.
+- Actualización visible desde el primer menú sin hacer más lento el arranque.
+- Timbre y mensaje directo para entrar en `[5] Actualizaciones` cuando se descubre una versión nueva.
+
 ## 7.6.10 — 2026-07-16
 
 - Registro automático de cada descarga en el catálogo multimedia de Android.
