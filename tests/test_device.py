@@ -68,6 +68,23 @@ class DeviceIntegrationTests(unittest.TestCase):
             ["termux-media-scan", "/sdcard/Download/FlowMobile/video.mp4"],
         )
 
+    def test_termux_scans_media_with_android_when_optional_api_is_missing(self):
+        completed = SimpleNamespace(returncode=0)
+        platform = SimpleNamespace(is_termux=True)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device.shutil, "which", return_value=None):
+                with patch.dict(device.os.environ, {"TERMUX__USER_ID": "0"}, clear=False):
+                    with patch.object(device.subprocess, "run", return_value=completed) as run:
+                        self.assertTrue(device.scan_media(Path("/sdcard/Movies/FlowMobile/video.mp4")))
+        self.assertEqual(
+            run.call_args.args[0],
+            [
+                "/system/bin/am", "broadcast", "--user", "0",
+                "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE",
+                "-d", "file:///sdcard/Movies/FlowMobile/video.mp4",
+            ],
+        )
+
     def test_ashell_completion_uses_terminal_bell_without_external_command(self):
         platform = SimpleNamespace(is_termux=False)
         with patch.object(device, "PLATFORM", platform):

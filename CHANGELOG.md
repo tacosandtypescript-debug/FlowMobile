@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.6.10 — 2026-07-16
+
+- Registro automático de cada descarga en el catálogo multimedia de Android.
+- Uso de `termux-media-scan` cuando Termux:API está disponible.
+- Respaldo mediante el broadcast nativo `MEDIA_SCANNER_SCAN_FILE` sin complementos.
+- Compatibilidad con perfiles secundarios de Android mediante `TERMUX__USER_ID`.
+- Prueba de regresión para impedir que vuelva a ser necesario mover o pegar el vídeo manualmente.
+
 ## 7.6.9 — 2026-07-16
 
 - Selector de aplicaciones Android forzado al compartir desde Termux.

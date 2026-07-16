@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -16,12 +17,25 @@ def _run(command: list[str]) -> bool:
 
 
 def scan_media(path: Path) -> bool:
-    """Pide a Android indexar el archivo cuando Termux:API está disponible."""
+    """Registra el archivo en MediaStore con API o con el broadcast de Android."""
     if not PLATFORM.is_termux:
         return True
-    if shutil.which("termux-media-scan") is None:
-        return False
-    return _run(["termux-media-scan", path.as_posix()])
+    if shutil.which("termux-media-scan") is not None:
+        if _run(["termux-media-scan", path.as_posix()]):
+            return True
+    user_id = os.environ.get("TERMUX__USER_ID", "0")
+    if not user_id.isdecimal() or (len(user_id) > 1 and user_id.startswith("0")):
+        user_id = "0"
+    portable_path = path.as_posix()
+    if not portable_path.startswith("/"):
+        portable_path = path.resolve().as_posix()
+    return _run([
+        "/system/bin/am",
+        "broadcast",
+        "--user", user_id,
+        "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE",
+        "-d", f"file://{portable_path}",
+    ])
 
 
 def open_share(path: Path) -> bool:
