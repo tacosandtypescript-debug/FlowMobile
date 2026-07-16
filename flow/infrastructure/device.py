@@ -16,7 +16,7 @@ def _run(command: list[str]) -> bool:
 def open_share(path: Path) -> bool:
     portable_path = path.as_posix()
     if PLATFORM.is_termux:
-        return _run(["termux-share", portable_path])
+        return _run(["termux-share", "-a", "send", portable_path])
     return _run(["open", portable_path])
 
 
