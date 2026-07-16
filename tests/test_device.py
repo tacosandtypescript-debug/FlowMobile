@@ -15,7 +15,7 @@ class DeviceIntegrationTests(unittest.TestCase):
                 self.assertTrue(device.open_share(Path("/tmp/audio.m4a")))
         self.assertEqual(
             run.call_args.args[0],
-            ["termux-share", "-a", "send", "/tmp/audio.m4a"],
+            ["termux-open", "--send", "/tmp/audio.m4a"],
         )
 
     def test_ashell_share_uses_open(self):
