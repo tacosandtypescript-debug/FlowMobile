@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.6.14 — 2026-07-17
+
+- PolyForm Strict License 1.0.0 aplicada a esta versión y las posteriores.
+- Uso personal no comercial permitido sin autorizar redistribución ni modificaciones.
+- Transición documentada: las versiones 7.6.0 a 7.6.13 conservan su licencia MIT.
+- Nombre e identidad de FlowMobile reservados para distinguir el proyecto oficial.
+- Aviso visible del repositorio oficial y verificaciones automáticas de licencia.
+
 ## 7.6.13 — 2026-07-17
 
 - Adjuntos locales de Codex protegidos para impedir que `git add .` pueda publicarlos.

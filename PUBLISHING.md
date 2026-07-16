@@ -7,7 +7,8 @@
 - `install.sh`, `install-ios.sh`, `bootstrap_ios.py`, `install_ios.py`,
   `uninstall_ios.py` e `install-termux.sh`.
 - `README.md`, `CHANGELOG.md` y `PUBLISHING.md`.
-- `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `docs/` y `.github/`.
+- `LICENSE`, `NOTICE`, `LICENSING.md`, `TRADEMARKS.md`, `SECURITY.md`,
+  `CONTRIBUTING.md`, `docs/` y `.github/`.
 
 ## Qué no se sube
 
@@ -27,7 +28,8 @@ anteriores del historial.
 1. Crea un repositorio público llamado `FlowMobile` con rama `main`.
 2. Confirma que el repositorio configurado sea
    `tacosandtypescript-debug/FlowMobile`.
-3. Añade una licencia apropiada antes de anunciar el proyecto.
+3. Confirma que `LICENSE` sea PolyForm Strict 1.0.0 y que la transición desde
+   MIT esté explicada en `LICENSING.md`.
 4. Confirma que Git solo incluya los elementos de la sección “Qué se sube”.
 5. Ejecuta las pruebas.
 6. Prueba instalaciones limpias tanto en a-Shell como en Termux.
@@ -43,7 +45,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript-debug@users.noreply.github.com"
 git add .
 git status
-git commit -m "Proteger datos privados en FlowMobile 7.6.13"
+git commit -m "Proteger FlowMobile 7.6.14 con PolyForm Strict"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -69,7 +71,7 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 119
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 121
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
@@ -79,8 +81,8 @@ primero la prueba completa en Termux y después repítela en a-Shell.
 Cuando `main` esté verde y la matriz de `docs/DEVICE_TESTING.md` esté completa:
 
 ```powershell
-git tag -a v7.6.13 -m "FlowMobile 7.6.13"
-git push origin v7.6.13
+git tag -a v7.6.14 -m "FlowMobile 7.6.14"
+git push origin v7.6.14
 ```
 
 La acción `Release` comprueba que la etiqueta coincida con `VERSION`, ejecuta

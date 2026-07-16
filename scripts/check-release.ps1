@@ -16,6 +16,9 @@ try {
         "CHANGELOG.md",
         "README.md",
         "LICENSE",
+        "NOTICE",
+        "LICENSING.md",
+        "TRADEMARKS.md",
         "SECURITY.md",
         "CONTRIBUTING.md",
         ".github/workflows/ci.yml",
@@ -46,6 +49,8 @@ try {
     $init = Get-Content -Raw -Encoding utf8 flow/__init__.py
     $readme = Get-Content -Raw -Encoding utf8 README.md
     $changelog = Get-Content -Raw -Encoding utf8 CHANGELOG.md
+    $license = Get-Content -Raw -Encoding utf8 LICENSE
+    $licensing = Get-Content -Raw -Encoding utf8 LICENSING.md
 
     if ($init -notmatch ('APP_VERSION\s*=\s*"' + [regex]::Escape($version) + '"')) {
         throw "APP_VERSION no coincide con VERSION ($version)."
@@ -55,6 +60,12 @@ try {
     }
     if ($changelog -notmatch ('(?m)^##\s+' + [regex]::Escape($version) + '(?:\s|$)')) {
         throw "CHANGELOG.md no contiene la version $version."
+    }
+    if (-not $license.StartsWith("# PolyForm Strict License 1.0.0")) {
+        throw "LICENSE no contiene PolyForm Strict License 1.0.0."
+    }
+    if ($licensing -notmatch '7\.6\.0 a 7\.6\.13' -or $licensing -notmatch '7\.6\.14 y posteriores') {
+        throw "LICENSING.md no documenta correctamente la transicion desde MIT."
     }
 
     $markerPattern = "TU_" + "USUARIO|TU_" + "REPOSITORIO"
