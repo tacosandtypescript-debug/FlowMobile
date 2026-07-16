@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 7.6.15 — 2026-07-17
+
+- Botones visibles para abrir la instalación de iPhone/iPad o Android desde el móvil.
+- Páginas mínimas con el comando completo y el control nativo de copia de GitHub.
+- Alternativa mediante pulsación prolongada para versiones de la app que oculten el icono.
+- Instrucciones separadas para pegar en a-Shell y Termux sin cortar accidentalmente el enlace.
+
 ## 7.6.14 — 2026-07-17
 
 - PolyForm Strict License 1.0.0 aplicada a esta versión y las posteriores.

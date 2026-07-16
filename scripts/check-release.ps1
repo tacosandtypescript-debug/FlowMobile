@@ -24,6 +24,8 @@ try {
         ".github/workflows/ci.yml",
         ".github/workflows/release.yml",
         "docs/DEVICE_TESTING.md",
+        "docs/COPIAR_IOS.md",
+        "docs/COPIAR_ANDROID.md",
         "main.py",
         "requirements.txt",
         "install.sh",

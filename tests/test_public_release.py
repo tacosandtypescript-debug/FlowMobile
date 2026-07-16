@@ -61,6 +61,17 @@ class PublicReleaseTests(unittest.TestCase):
         publishing = (ROOT / "PUBLISHING.md").read_text(encoding="utf-8")
         self.assertIn("@users.noreply.github.com", publishing)
 
+    def test_mobile_copy_buttons_use_official_install_commands(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        ios = (ROOT / "docs" / "COPIAR_IOS.md").read_text(encoding="utf-8")
+        android = (ROOT / "docs" / "COPIAR_ANDROID.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("docs/COPIAR_IOS.md", readme)
+        self.assertIn("docs/COPIAR_ANDROID.md", readme)
+        self.assertIn("bootstrap_ios.py | python3 -", ios)
+        self.assertIn("install.sh | sh -s --", android)
+
 
 if __name__ == "__main__":
     unittest.main()

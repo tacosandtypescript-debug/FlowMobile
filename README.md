@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.6.14**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.6.15**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
@@ -13,6 +13,14 @@ plataformas.
 > FlowMobile 7.6.14 y posteriores permiten uso personal no comercial, pero no
 > redistribución ni modificaciones. Consulta [las condiciones](LICENSING.md) y
 > [la política de marca](TRADEMARKS.md).
+
+## Copiar instalación desde el móvil
+
+[![Copiar para iPhone o iPad](https://img.shields.io/badge/COPIAR_COMANDO-iPhone_%2F_iPad-007AFF?style=for-the-badge&logo=apple&logoColor=white)](docs/COPIAR_IOS.md)
+[![Copiar para Android](https://img.shields.io/badge/COPIAR_COMANDO-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](docs/COPIAR_ANDROID.md)
+
+Pulsa el botón de tu dispositivo. Se abrirá un bloque con el icono nativo de
+GitHub para copiar el comando completo sin seleccionar el enlace manualmente.
 
 ## Instalación en a-Shell
 
