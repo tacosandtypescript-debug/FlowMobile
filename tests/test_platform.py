@@ -2,7 +2,12 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from flow.infrastructure.platform import PlatformInfo, detect_platform, termux_shared_downloads
+from flow.infrastructure.platform import (
+    PlatformInfo,
+    detect_platform,
+    termux_shared_directory,
+    termux_shared_downloads,
+)
 
 
 class PlatformDetectionTests(unittest.TestCase):
@@ -32,6 +37,14 @@ class PlatformDetectionTests(unittest.TestCase):
         platform = PlatformInfo("ashell", "a-Shell", "iOS")
         with TemporaryDirectory() as temporary:
             self.assertIsNone(termux_shared_downloads(platform, Path(temporary)))
+
+    def test_termux_uses_android_movies_for_gallery_videos(self):
+        platform = PlatformInfo("termux", "Termux", "Android")
+        with TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            movies = home / "storage" / "movies"
+            movies.mkdir(parents=True)
+            self.assertEqual(termux_shared_directory("movies", platform, home), movies)
 
 
 if __name__ == "__main__":

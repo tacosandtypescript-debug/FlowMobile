@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 
 from flow.domain.models import DownloadChoice
-from flow.infrastructure.paths import BATCH_DIR, QUEUE_DIR
+from flow.infrastructure.paths import AUDIO_BATCH_DIR, BATCH_DIR, QUEUE_DIR, VIDEO_BATCH_DIR
 
 
 @dataclass(slots=True)
@@ -29,7 +29,11 @@ class DownloadQueue:
 
     @property
     def folder(self) -> Path:
-        return BATCH_DIR / self.queue_id
+        legacy = BATCH_DIR / self.queue_id
+        if legacy.exists():
+            return legacy
+        root = VIDEO_BATCH_DIR if self.choice.kind == "video" else AUDIO_BATCH_DIR
+        return root / self.queue_id
 
     @property
     def pending(self) -> int:
@@ -61,8 +65,7 @@ def create_queue(urls: list[str], choice: DownloadChoice) -> DownloadQueue:
         choice=choice,
         items=[QueueItem(url=url) for url in dict.fromkeys(urls)],
     )
-    (queue.folder / "Videos").mkdir(parents=True, exist_ok=True)
-    (queue.folder / "Audio").mkdir(parents=True, exist_ok=True)
+    queue.folder.mkdir(parents=True, exist_ok=True)
     save_queue(queue)
     return queue
 

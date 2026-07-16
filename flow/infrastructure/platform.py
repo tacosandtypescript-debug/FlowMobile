@@ -53,12 +53,23 @@ def termux_shared_downloads(
     platform: PlatformInfo | None = None,
     home: Path | None = None,
 ) -> Path | None:
+    return termux_shared_directory("downloads", platform, home)
+
+
+def termux_shared_directory(
+    name: str,
+    platform: PlatformInfo | None = None,
+    home: Path | None = None,
+) -> Path | None:
     current_platform = platform or PLATFORM
     if not current_platform.is_termux:
         return None
     current_home = home or Path.home()
+    android_names = {"downloads": "Download", "movies": "Movies", "music": "Music"}
+    if name not in android_names:
+        raise ValueError(f"Carpeta compartida de Android no reconocida: {name}")
     candidates = [
-        current_home / "storage" / "downloads",
-        Path("/storage/emulated/0/Download"),
+        current_home / "storage" / name,
+        Path("/storage/emulated/0") / android_names[name],
     ]
     return next((path for path in candidates if _directory_is_writable(path)), None)

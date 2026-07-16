@@ -10,7 +10,11 @@ WORK_DIR="${TMPDIR:-${PREFIX:-$HOME/../usr}/tmp}/flowmobile-install-$$"
 ARCHIVE="$WORK_DIR/flowmobile.tar.gz"
 BACKUP_DIR="$WORK_DIR/previous"
 SHARED_DOWNLOAD_ROOT="$HOME/storage/downloads"
+SHARED_MOVIE_ROOT="$HOME/storage/movies"
+SHARED_MUSIC_ROOT="$HOME/storage/music"
 PUBLIC_DOWNLOAD_DIR="$SHARED_DOWNLOAD_ROOT/FlowMobile"
+PUBLIC_VIDEO_DIR="$SHARED_MOVIE_ROOT/FlowMobile"
+PUBLIC_AUDIO_DIR="$SHARED_MUSIC_ROOT/FlowMobile"
 OLD_BACKED_UP=0
 NEW_INSTALLED=0
 
@@ -34,15 +38,22 @@ echo "Preparando Termux…"
 pkg update -y
 pkg install -y python python-pip ffmpeg curl
 
-shared_storage_ready() {
-    probe="$SHARED_DOWNLOAD_ROOT/.flowmobile-write-test-$$"
-    [ -d "$SHARED_DOWNLOAD_ROOT" ] || return 1
+directory_ready() {
+    directory=$1
+    probe="$directory/.flowmobile-write-test-$$"
+    [ -d "$directory" ] || return 1
     if (umask 077; : > "$probe") 2>/dev/null; then
         rm -f "$probe"
         return 0
     fi
     rm -f "$probe"
     return 1
+}
+
+shared_storage_ready() {
+    directory_ready "$SHARED_DOWNLOAD_ROOT" &&
+        directory_ready "$SHARED_MOVIE_ROOT" &&
+        directory_ready "$SHARED_MUSIC_ROOT"
 }
 
 if ! shared_storage_ready; then
@@ -60,7 +71,7 @@ if ! shared_storage_ready; then
     echo "Concede el permiso de archivos a Termux, ejecuta termux-setup-storage y repite la instalación."
     exit 1
 fi
-mkdir -p "$PUBLIC_DOWNLOAD_DIR/Videos" "$PUBLIC_DOWNLOAD_DIR/Audio" "$PUBLIC_DOWNLOAD_DIR/Lotes"
+mkdir -p "$PUBLIC_DOWNLOAD_DIR/Lotes" "$PUBLIC_VIDEO_DIR/Lotes" "$PUBLIC_AUDIO_DIR/Lotes"
 
 echo "Instalando FlowMobile para Termux…"
 mkdir -p "$WORK_DIR" "$BIN_DIR"
@@ -105,10 +116,45 @@ restore_saved_item() {
     fi
 }
 
+move_saved_media() {
+    source=$1
+    destination=$2
+    [ -d "$source" ] || return 0
+    mkdir -p "$destination"
+    for media in "$source"/*; do
+        [ -e "$media" ] || continue
+        name=$(basename "$media")
+        if [ -e "$destination/$name" ]; then
+            echo "Se conservó un archivo repetido en: $media"
+        else
+            mv "$media" "$destination/$name"
+        fi
+    done
+    rmdir "$source" 2>/dev/null || true
+}
+
+migrate_saved_downloads() {
+    source=$1
+    [ -d "$source" ] || return 0
+    restore_saved_item "$source/Videos" "$PUBLIC_VIDEO_DIR"
+    restore_saved_item "$source/Audio" "$PUBLIC_AUDIO_DIR"
+    restore_saved_item "$source/Lotes" "$PUBLIC_DOWNLOAD_DIR/Lotes"
+    for item in "$source"/*; do
+        [ -e "$item" ] || continue
+        name=$(basename "$item")
+        case "$name" in Videos|Audio|Lotes) continue ;; esac
+        restore_saved_item "$item" "$PUBLIC_DOWNLOAD_DIR/$name"
+    done
+}
+
+# La 7.6.7 guardaba estos archivos en Download; se recolocan sin duplicarlos.
+move_saved_media "$PUBLIC_DOWNLOAD_DIR/Videos" "$PUBLIC_VIDEO_DIR"
+move_saved_media "$PUBLIC_DOWNLOAD_DIR/Audio" "$PUBLIC_AUDIO_DIR"
+
 for saved in "$DATA_BACKUP_DIR" "$BACKUP_DIR"; do
     if [ -d "$saved/Downloads" ]; then
-        echo "Migrando descargas anteriores a Android/Download/FlowMobile…"
-        restore_saved_item "$saved/Downloads" "$PUBLIC_DOWNLOAD_DIR"
+        echo "Migrando descargas anteriores a las carpetas multimedia de Android…"
+        migrate_saved_downloads "$saved/Downloads"
     fi
     for item in .flowmobile flow_settings.json; do
         if [ -e "$saved/$item" ]; then restore_saved_item "$saved/$item" "$APP_DIR/$item"; fi
@@ -123,5 +169,6 @@ python3 -m pip install --disable-pip-version-check --upgrade "yt-dlp[default]"
 rm -rf "$DATA_BACKUP_DIR"
 
 echo "FlowMobile instalado para Android."
-echo "Descargas públicas: $PUBLIC_DOWNLOAD_DIR"
+echo "Videos para la galería: $PUBLIC_VIDEO_DIR"
+echo "Audios: $PUBLIC_AUDIO_DIR"
 echo "Escribe: flow"

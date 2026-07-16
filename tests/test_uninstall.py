@@ -1,9 +1,11 @@
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from flow.infrastructure.platform import PlatformInfo
 from flow.infrastructure.uninstall import remove_profile_launcher, uninstall
+from flow.infrastructure import uninstall as uninstall_module
 
 
 class UninstallTests(unittest.TestCase):
@@ -69,6 +71,33 @@ class UninstallTests(unittest.TestCase):
             self.assertFalse(app.exists())
             self.assertFalse(shared.exists())
             self.assertFalse(saved.exists())
+
+    def test_complete_termux_uninstall_removes_downloads_movies_and_music(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            app = root / "FlowMobile"
+            downloads = root / "Download" / "FlowMobile"
+            movies = root / "Movies" / "FlowMobile"
+            music = root / "Music" / "FlowMobile"
+            (app / "flow").mkdir(parents=True)
+            (app / "main.py").write_text("print('flow')", encoding="utf-8")
+            for directory in (downloads, movies, music):
+                directory.mkdir(parents=True)
+                (directory / "media.bin").write_bytes(b"media")
+            platform = PlatformInfo("termux", "Termux", "Android")
+
+            with patch.object(uninstall_module, "DOWNLOAD_DIR", downloads):
+                with patch.object(uninstall_module, "VIDEO_DIR", movies):
+                    with patch.object(uninstall_module, "AUDIO_DIR", music):
+                        result = uninstall_module.uninstall(
+                            True, app, platform=platform, home=root
+                        )
+
+            self.assertTrue(result.ok)
+            self.assertFalse(app.exists())
+            self.assertFalse(downloads.exists())
+            self.assertFalse(movies.exists())
+            self.assertFalse(music.exists())
 
 
 if __name__ == "__main__":

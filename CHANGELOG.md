@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 7.6.8 — 2026-07-16
+
+- Vídeos de Termux guardados en `Android/Movies/FlowMobile` para que aparezcan en la galería.
+- Audios guardados en la carpeta multimedia estándar `Android/Music/FlowMobile`.
+- Lotes nuevos separados entre Movies y Music según el tipo de descarga.
+- Migración sin duplicados de los archivos creados por la versión 7.6.7.
+- Compatibilidad para reanudar las colas antiguas que continúen en Download.
+- Desinstalación completa ampliada a Download, Movies y Music.
+
 ## 7.6.7 — 2026-07-16
 
 - Descargas de Termux fijadas en la carpeta pública `Android/Download/FlowMobile`.

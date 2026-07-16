@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from flow.infrastructure.platform import PLATFORM, termux_shared_downloads
+from flow.infrastructure.platform import (
+    PLATFORM,
+    termux_shared_directory,
+    termux_shared_downloads,
+)
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 STATE_DIR = BASE_DIR / ".flowmobile"
@@ -9,6 +13,8 @@ QUEUE_DIR = STATE_DIR / "queues"
 
 
 _SHARED_DOWNLOADS = termux_shared_downloads()
+_SHARED_MOVIES = termux_shared_directory("movies")
+_SHARED_MUSIC = termux_shared_directory("music")
 
 
 def _prepare_download_dir() -> Path:
@@ -23,8 +29,7 @@ def _prepare_download_dir() -> Path:
 
     for candidate in dict.fromkeys((preferred, fallback)):
         try:
-            (candidate / "Videos").mkdir(parents=True, exist_ok=True)
-            (candidate / "Audio").mkdir(parents=True, exist_ok=True)
+            candidate.mkdir(parents=True, exist_ok=True)
             return candidate
         except OSError as exc:
             last_error = exc
@@ -33,10 +38,19 @@ def _prepare_download_dir() -> Path:
 
 
 DOWNLOAD_DIR = _prepare_download_dir()
-TERMUX_DOWNLOADS_PUBLIC = not PLATFORM.is_termux or _SHARED_DOWNLOADS is not None
-VIDEO_DIR = DOWNLOAD_DIR / "Videos"
-AUDIO_DIR = DOWNLOAD_DIR / "Audio"
-BATCH_DIR = DOWNLOAD_DIR / "Lotes"
+TERMUX_DOWNLOADS_PUBLIC = not PLATFORM.is_termux or all(
+    directory is not None
+    for directory in (_SHARED_DOWNLOADS, _SHARED_MOVIES, _SHARED_MUSIC)
+)
+if PLATFORM.is_termux and TERMUX_DOWNLOADS_PUBLIC:
+    VIDEO_DIR = _SHARED_MOVIES / "FlowMobile"
+    AUDIO_DIR = _SHARED_MUSIC / "FlowMobile"
+else:
+    VIDEO_DIR = DOWNLOAD_DIR / "Videos"
+    AUDIO_DIR = DOWNLOAD_DIR / "Audio"
+BATCH_DIR = DOWNLOAD_DIR / "Lotes"  # Compatibilidad con colas anteriores.
+VIDEO_BATCH_DIR = VIDEO_DIR / "Lotes"
+AUDIO_BATCH_DIR = AUDIO_DIR / "Lotes"
 HISTORY_FILE = STATE_DIR / "history.json"
 SETTINGS_FILE = STATE_DIR / "settings.json"
 LEGACY_HISTORY_FILE = BASE_DIR / "Downloads" / "history.json"
@@ -45,7 +59,8 @@ LEGACY_SETTINGS_FILE = BASE_DIR / "flow_settings.json"
 STATE_DIR.mkdir(parents=True, exist_ok=True)
 SESSION_DIR.mkdir(parents=True, exist_ok=True)
 QUEUE_DIR.mkdir(parents=True, exist_ok=True)
-BATCH_DIR.mkdir(parents=True, exist_ok=True)
+for media_directory in (VIDEO_DIR, AUDIO_DIR, BATCH_DIR, VIDEO_BATCH_DIR, AUDIO_BATCH_DIR):
+    media_directory.mkdir(parents=True, exist_ok=True)
 for private_directory in (STATE_DIR, SESSION_DIR, QUEUE_DIR):
     try:
         private_directory.chmod(0o700)

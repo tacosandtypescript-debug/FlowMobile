@@ -55,6 +55,9 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertIn(".flowmobile-write-test-$$", installer)
         self.assertIn('SHARED_DOWNLOAD_ROOT="$HOME/storage/downloads"', installer)
         self.assertIn('PUBLIC_DOWNLOAD_DIR="$SHARED_DOWNLOAD_ROOT/FlowMobile"', installer)
+        self.assertIn('PUBLIC_VIDEO_DIR="$SHARED_MOVIE_ROOT/FlowMobile"', installer)
+        self.assertIn('PUBLIC_AUDIO_DIR="$SHARED_MUSIC_ROOT/FlowMobile"', installer)
+        self.assertIn("move_saved_media", installer)
         self.assertNotIn('"$APP_DIR/Downloads"', installer)
 
     def test_termux_sharing_does_not_require_optional_api_app(self):

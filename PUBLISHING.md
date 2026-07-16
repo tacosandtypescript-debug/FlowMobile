@@ -42,7 +42,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Guardar descargas de Termux en Android 7.6.7"
+git commit -m "Integrar videos de Termux con la galería 7.6.8"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -68,7 +68,7 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 100
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 102
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
@@ -78,8 +78,8 @@ primero la prueba completa en Termux y después repítela en a-Shell.
 Cuando `main` esté verde y la matriz de `docs/DEVICE_TESTING.md` esté completa:
 
 ```powershell
-git tag -a v7.6.7 -m "FlowMobile 7.6.7"
-git push origin v7.6.7
+git tag -a v7.6.8 -m "FlowMobile 7.6.8"
+git push origin v7.6.8
 ```
 
 La acción `Release` comprueba que la etiqueta coincida con `VERSION`, ejecuta

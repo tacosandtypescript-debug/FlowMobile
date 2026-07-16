@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import shutil
 
-from flow.infrastructure.paths import BASE_DIR, DOWNLOAD_DIR
+from flow.infrastructure.paths import AUDIO_DIR, BASE_DIR, DOWNLOAD_DIR, VIDEO_DIR
 from flow.infrastructure.platform import PLATFORM, PlatformInfo
 
 
@@ -168,7 +168,7 @@ def _remove_launcher(
 def uninstall(
     purge_all: bool,
     app_directory: Path = BASE_DIR,
-    download_directory: Path = DOWNLOAD_DIR,
+    download_directory: Path | None = None,
     platform: PlatformInfo = PLATFORM,
     home: Path | None = None,
 ) -> UninstallResult:
@@ -178,14 +178,21 @@ def uninstall(
     result = UninstallResult()
     _remove_launcher(app_directory, platform, documents, result)
 
+    download_directory = download_directory or DOWNLOAD_DIR
+    supplied_download_directory = download_directory
     download_directory = download_directory.resolve()
     download_is_inside_app = download_directory == app_directory / "Downloads"
     preserved_directory = preserved_data_directory(app_directory)
     if purge_all:
-        if not download_is_inside_app and download_directory.exists():
-            if download_directory.name != "FlowMobile":
+        media_directories = [download_directory]
+        if supplied_download_directory == DOWNLOAD_DIR:
+            media_directories.extend((VIDEO_DIR.resolve(), AUDIO_DIR.resolve()))
+        for media_directory in dict.fromkeys(media_directories):
+            if media_directory == app_directory / "Downloads" or not media_directory.exists():
+                continue
+            if media_directory.name != "FlowMobile":
                 raise ValueError("FlowMobile se negó a borrar una carpeta de descargas no reconocida.")
-            _remove_path(download_directory, result)
+            _remove_path(media_directory, result)
         if platform.is_ashell:
             from uninstall_ios import purge_flowmobile
 

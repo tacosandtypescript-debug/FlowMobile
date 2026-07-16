@@ -85,7 +85,7 @@ class FlowCLI:
         print(f"{YELLOW}FlowMobile no iniciará una descarga en la carpeta privada de Termux.{RESET}")
         print(f"{GRAY}Ejecuta: termux-setup-storage{RESET}")
         print(f"{GRAY}Acepta el permiso de archivos de Android y vuelve a abrir flow.{RESET}")
-        print(f"{GRAY}Las descargas quedarán en Download/FlowMobile.{RESET}")
+        print(f"{GRAY}Los videos quedarán en Movies/FlowMobile para aparecer en Galería.{RESET}")
         self.pause()
         return False
 
@@ -555,7 +555,8 @@ class FlowCLI:
         print("Plataforma:", f"{PLATFORM.name} ({PLATFORM.mobile_os})")
         print("Python:", sys.version.split()[0])
         print("yt-dlp:", yt_dlp.version.__version__)
-        print("Descargas:", DOWNLOAD_DIR)
+        print("Videos:", VIDEO_DIR)
+        print("Audios:", AUDIO_DIR)
         if PLATFORM.is_termux:
             storage_label = "Android / públicas" if TERMUX_DOWNLOADS_PUBLIC else "permiso pendiente"
             print("Almacenamiento:", storage_label)
@@ -762,8 +763,8 @@ class FlowCLI:
                 queue.choice,
                 self.progress_hook,
                 self.conversion_progress,
-                video_dir=queue.folder / "Videos",
-                audio_dir=queue.folder / "Audio",
+                video_dir=queue.folder,
+                audio_dir=queue.folder,
             )
             if result.ok and result.file is not None:
                 item.status = "completed"
