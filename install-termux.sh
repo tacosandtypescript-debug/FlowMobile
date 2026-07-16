@@ -9,6 +9,8 @@ BIN_DIR="${PREFIX:-$HOME/../usr}/bin"
 WORK_DIR="${TMPDIR:-${PREFIX:-$HOME/../usr}/tmp}/flowmobile-install-$$"
 ARCHIVE="$WORK_DIR/flowmobile.tar.gz"
 BACKUP_DIR="$WORK_DIR/previous"
+SHARED_DOWNLOAD_ROOT="$HOME/storage/downloads"
+PUBLIC_DOWNLOAD_DIR="$SHARED_DOWNLOAD_ROOT/FlowMobile"
 OLD_BACKED_UP=0
 NEW_INSTALLED=0
 
@@ -32,10 +34,33 @@ echo "Preparando Termux…"
 pkg update -y
 pkg install -y python python-pip ffmpeg curl
 
-if [ ! -d "$HOME/storage/downloads" ]; then
+shared_storage_ready() {
+    probe="$SHARED_DOWNLOAD_ROOT/.flowmobile-write-test-$$"
+    [ -d "$SHARED_DOWNLOAD_ROOT" ] || return 1
+    if (umask 077; : > "$probe") 2>/dev/null; then
+        rm -f "$probe"
+        return 0
+    fi
+    rm -f "$probe"
+    return 1
+}
+
+if ! shared_storage_ready; then
     echo "Android solicitará permiso para acceder a Descargas."
     termux-setup-storage || true
 fi
+
+attempt=0
+while ! shared_storage_ready && [ "$attempt" -lt 15 ]; do
+    sleep 1
+    attempt=$((attempt + 1))
+done
+if ! shared_storage_ready; then
+    echo "FlowMobile necesita acceso a Descargas para no ocultar los archivos."
+    echo "Concede el permiso de archivos a Termux, ejecuta termux-setup-storage y repite la instalación."
+    exit 1
+fi
+mkdir -p "$PUBLIC_DOWNLOAD_DIR/Videos" "$PUBLIC_DOWNLOAD_DIR/Audio" "$PUBLIC_DOWNLOAD_DIR/Lotes"
 
 echo "Instalando FlowMobile para Termux…"
 mkdir -p "$WORK_DIR" "$BIN_DIR"
@@ -81,10 +106,12 @@ restore_saved_item() {
 }
 
 for saved in "$DATA_BACKUP_DIR" "$BACKUP_DIR"; do
-    for item in Downloads .flowmobile flow_settings.json; do
-        if [ -e "$saved/$item" ]; then
-            restore_saved_item "$saved/$item" "$APP_DIR/$item"
-        fi
+    if [ -d "$saved/Downloads" ]; then
+        echo "Migrando descargas anteriores a Android/Download/FlowMobile…"
+        restore_saved_item "$saved/Downloads" "$PUBLIC_DOWNLOAD_DIR"
+    fi
+    for item in .flowmobile flow_settings.json; do
+        if [ -e "$saved/$item" ]; then restore_saved_item "$saved/$item" "$APP_DIR/$item"; fi
     done
 done
 
@@ -95,4 +122,6 @@ python3 -m pip install --disable-pip-version-check --upgrade "yt-dlp[default]"
 [ -f "$APP_DIR/main.py" ] && [ -d "$APP_DIR/flow" ] && [ -f "$APP_DIR/VERSION" ]
 rm -rf "$DATA_BACKUP_DIR"
 
-echo "FlowMobile instalado para Android. Escribe: flow"
+echo "FlowMobile instalado para Android."
+echo "Descargas públicas: $PUBLIC_DOWNLOAD_DIR"
+echo "Escribe: flow"

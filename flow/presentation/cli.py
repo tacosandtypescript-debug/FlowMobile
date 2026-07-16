@@ -37,7 +37,12 @@ from flow.infrastructure.batches import (
     save_queue,
 )
 from flow.infrastructure.device import notify_complete, open_share, play_media
-from flow.infrastructure.paths import AUDIO_DIR, VIDEO_DIR
+from flow.infrastructure.paths import (
+    AUDIO_DIR,
+    DOWNLOAD_DIR,
+    TERMUX_DOWNLOADS_PUBLIC,
+    VIDEO_DIR,
+)
 from flow.infrastructure.platform import PLATFORM
 from flow.infrastructure.repair import (
     clean_temporary_files,
@@ -71,6 +76,18 @@ class FlowCLI:
         self._update_lock = threading.Lock()
         self._tools_status: tuple[bool, bool] | None = None
         self._last_accessible_progress = -10
+
+    def ensure_download_storage(self) -> bool:
+        """Impide que Termux vuelva a ocultar descargas en sus datos privados."""
+        if not PLATFORM.is_termux or TERMUX_DOWNLOADS_PUBLIC:
+            return True
+        self.logo("PERMISO DE ALMACENAMIENTO")
+        print(f"{YELLOW}FlowMobile no iniciará una descarga en la carpeta privada de Termux.{RESET}")
+        print(f"{GRAY}Ejecuta: termux-setup-storage{RESET}")
+        print(f"{GRAY}Acepta el permiso de archivos de Android y vuelve a abrir flow.{RESET}")
+        print(f"{GRAY}Las descargas quedarán en Download/FlowMobile.{RESET}")
+        self.pause()
+        return False
 
     def clear(self) -> None:
         mode = getattr(getattr(self, "settings", None), "interface_mode", "compact")
@@ -420,6 +437,8 @@ class FlowCLI:
                 raise SystemExit(0)
 
     def new_download(self) -> None:
+        if not self.ensure_download_storage():
+            return
         self.logo("NUEVA DESCARGA")
         print(f"{GRAY}Pega un enlace web o escribe 0 para volver.{RESET}")
         url = self.prompt_url()
@@ -536,6 +555,10 @@ class FlowCLI:
         print("Plataforma:", f"{PLATFORM.name} ({PLATFORM.mobile_os})")
         print("Python:", sys.version.split()[0])
         print("yt-dlp:", yt_dlp.version.__version__)
+        print("Descargas:", DOWNLOAD_DIR)
+        if PLATFORM.is_termux:
+            storage_label = "Android / públicas" if TERMUX_DOWNLOADS_PUBLIC else "permiso pendiente"
+            print("Almacenamiento:", storage_label)
         ffmpeg_available, ffprobe_available = tools_status()
         self._tools_status = (ffmpeg_available, ffprobe_available)
         try:
@@ -591,6 +614,8 @@ class FlowCLI:
             self.pause()
 
     def show_real_tests(self) -> None:
+        if not self.ensure_download_storage():
+            return
         self.logo("PRUEBAS REALES")
         print(f"{YELLOW}Estas pruebas descargan archivos reales y consumen datos.{RESET}")
         print(f"{GRAY}Usa enlaces públicos propios o que tengas permiso de descargar.{RESET}\n")
@@ -697,6 +722,8 @@ class FlowCLI:
             urls.append(value)
 
     def process_queue(self, queue: DownloadQueue) -> None:
+        if not self.ensure_download_storage():
+            return
         self.logo(f"LOTE {queue.queue_id}")
         print(f"{GRAY}Carpeta separada: {queue.folder}{RESET}")
         print(f"{YELLOW}Cancelar archivo actual: c + Enter o Ctrl+C.{RESET}\n")
@@ -762,6 +789,8 @@ class FlowCLI:
         self.pause()
 
     def create_batch(self, urls: list[str]) -> None:
+        if not self.ensure_download_storage():
+            return
         if not urls:
             print(f"{YELLOW}No se añadieron enlaces.{RESET}")
             self.pause()

@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## 7.6.7 — 2026-07-16
+
+- Descargas de Termux fijadas en la carpeta pública `Android/Download/FlowMobile`.
+- Verificación de escritura real después de solicitar el permiso de Android.
+- Bloqueo seguro de las descargas cuando falta el permiso, sin crear archivos ocultos.
+- Migración automática de descargas antiguas desde los datos privados de Termux.
+- Compartir mediante `termux-open` sin exigir Termux:API.
+- Escaneo opcional de los archivos terminados para mostrarlos antes en la galería.
+- Estado del almacenamiento y ruta de descargas visibles en el menú Sistema.
+
 ## 7.6.5 — 2026-07-16
 
 - Normalización de rutas equivalentes antes de aplicar las protecciones del borrado.

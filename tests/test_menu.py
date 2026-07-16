@@ -8,6 +8,25 @@ from flow.presentation.cli import FlowCLI
 
 
 class InteractiveMenuTests(unittest.TestCase):
+    def test_runtime_state_is_initialized(self):
+        with patch("flow.presentation.cli.MediaService"):
+            with patch("flow.presentation.cli.load_settings"):
+                cli = FlowCLI()
+        self.assertIsInstance(cli._update_lock, type(threading.Lock()))
+        self.assertIsNone(cli._tools_status)
+
+    def test_termux_without_public_storage_blocks_downloads(self):
+        cli = FlowCLI.__new__(FlowCLI)
+        platform = SimpleNamespace(is_termux=True)
+        with patch("flow.presentation.cli.PLATFORM", platform):
+            with patch("flow.presentation.cli.TERMUX_DOWNLOADS_PUBLIC", False):
+                with patch.object(cli, "logo") as logo:
+                    with patch.object(cli, "pause") as pause:
+                        with patch("sys.stdout", StringIO()):
+                            self.assertFalse(cli.ensure_download_storage())
+        logo.assert_called_once_with("PERMISO DE ALMACENAMIENTO")
+        pause.assert_called_once()
+
     def test_ios_screen_is_written_as_one_terminal_frame(self):
         class CountingOutput(StringIO):
             def __init__(self):

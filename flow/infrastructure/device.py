@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
 import subprocess
 
 from flow.infrastructure.platform import PLATFORM
@@ -13,9 +14,19 @@ def _run(command: list[str]) -> bool:
         return False
 
 
+def scan_media(path: Path) -> bool:
+    """Pide a Android indexar el archivo cuando Termux:API está disponible."""
+    if not PLATFORM.is_termux:
+        return True
+    if shutil.which("termux-media-scan") is None:
+        return False
+    return _run(["termux-media-scan", path.as_posix()])
+
+
 def open_share(path: Path) -> bool:
     portable_path = path.as_posix()
     if PLATFORM.is_termux:
+        scan_media(path)
         return _run(["termux-open", "--send", portable_path])
     return _run(["open", portable_path])
 
@@ -32,6 +43,7 @@ def notify_complete(path: Path) -> bool:
     print("\a", end="", flush=True)
     if not PLATFORM.is_termux:
         return True
+    scan_media(path)
     return _run([
         "termux-notification",
         "--title", "FlowMobile",

@@ -32,15 +32,33 @@ def detect_platform(environment: Mapping[str, str] | None = None) -> PlatformInf
 PLATFORM = detect_platform()
 
 
-def termux_shared_downloads() -> Path | None:
-    if not PLATFORM.is_termux:
+def _directory_is_writable(path: Path) -> bool:
+    """Comprueba escritura real; os.access no es fiable con permisos de Android."""
+    if not path.is_dir():
+        return False
+    probe = path / f".flowmobile-write-test-{os.getpid()}"
+    try:
+        probe.write_bytes(b"")
+        probe.unlink()
+        return True
+    except OSError:
+        try:
+            probe.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return False
+
+
+def termux_shared_downloads(
+    platform: PlatformInfo | None = None,
+    home: Path | None = None,
+) -> Path | None:
+    current_platform = platform or PLATFORM
+    if not current_platform.is_termux:
         return None
-    home = Path.home()
+    current_home = home or Path.home()
     candidates = [
-        home / "storage" / "downloads",
+        current_home / "storage" / "downloads",
         Path("/storage/emulated/0/Download"),
     ]
-    return next(
-        (path for path in candidates if path.exists() and os.access(path, os.W_OK)),
-        None,
-    )
+    return next((path for path in candidates if _directory_is_writable(path)), None)

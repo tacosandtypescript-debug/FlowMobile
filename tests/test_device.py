@@ -11,8 +11,9 @@ class DeviceIntegrationTests(unittest.TestCase):
         completed = SimpleNamespace(returncode=0)
         platform = SimpleNamespace(is_termux=True)
         with patch.object(device, "PLATFORM", platform):
-            with patch.object(device.subprocess, "run", return_value=completed) as run:
-                self.assertTrue(device.open_share(Path("/tmp/audio.m4a")))
+            with patch.object(device.shutil, "which", return_value=None):
+                with patch.object(device.subprocess, "run", return_value=completed) as run:
+                    self.assertTrue(device.open_share(Path("/tmp/audio.m4a")))
         self.assertEqual(
             run.call_args.args[0],
             ["termux-open", "--send", "/tmp/audio.m4a"],
@@ -30,10 +31,23 @@ class DeviceIntegrationTests(unittest.TestCase):
         completed = SimpleNamespace(returncode=0)
         platform = SimpleNamespace(is_termux=True)
         with patch.object(device, "PLATFORM", platform):
-            with patch.object(device.subprocess, "run", return_value=completed) as run:
-                with patch("builtins.print"):
-                    self.assertTrue(device.notify_complete(Path("/tmp/audio.m4a")))
+            with patch.object(device.shutil, "which", return_value=None):
+                with patch.object(device.subprocess, "run", return_value=completed) as run:
+                    with patch("builtins.print"):
+                        self.assertTrue(device.notify_complete(Path("/tmp/audio.m4a")))
         self.assertEqual(run.call_args.args[0][0], "termux-notification")
+
+    def test_termux_scans_media_when_optional_api_is_available(self):
+        completed = SimpleNamespace(returncode=0)
+        platform = SimpleNamespace(is_termux=True)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device.shutil, "which", return_value="termux-media-scan"):
+                with patch.object(device.subprocess, "run", return_value=completed) as run:
+                    self.assertTrue(device.scan_media(Path("/sdcard/Download/FlowMobile/video.mp4")))
+        self.assertEqual(
+            run.call_args.args[0],
+            ["termux-media-scan", "/sdcard/Download/FlowMobile/video.mp4"],
+        )
 
     def test_ashell_completion_uses_terminal_bell_without_external_command(self):
         platform = SimpleNamespace(is_termux=False)

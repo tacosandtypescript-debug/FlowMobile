@@ -49,6 +49,19 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertIn("archive/refs/heads/$BRANCH", installer)
         self.assertIn("archive/refs/tags/$BRANCH", installer)
 
+    def test_termux_installer_requires_public_android_downloads(self):
+        installer = (ROOT / "install-termux.sh").read_text(encoding="utf-8")
+        self.assertIn("shared_storage_ready", installer)
+        self.assertIn(".flowmobile-write-test-$$", installer)
+        self.assertIn('SHARED_DOWNLOAD_ROOT="$HOME/storage/downloads"', installer)
+        self.assertIn('PUBLIC_DOWNLOAD_DIR="$SHARED_DOWNLOAD_ROOT/FlowMobile"', installer)
+        self.assertNotIn('"$APP_DIR/Downloads"', installer)
+
+    def test_termux_sharing_does_not_require_optional_api_app(self):
+        device = (ROOT / "flow" / "infrastructure" / "device.py").read_text(encoding="utf-8")
+        self.assertIn('["termux-open", "--send", portable_path]', device)
+        self.assertNotIn("termux-share", device)
+
     def test_ios_bootstrap_requests_latest_installer_from_api(self):
         content = (ROOT / "bootstrap_ios.py").read_text(encoding="utf-8")
         self.assertIn("api.github.com/repos", content)

@@ -8,12 +8,14 @@ SESSION_DIR = STATE_DIR / "sessions"
 QUEUE_DIR = STATE_DIR / "queues"
 
 
+_SHARED_DOWNLOADS = termux_shared_downloads()
+
+
 def _prepare_download_dir() -> Path:
-    """Usa almacenamiento compartido en Android y vuelve al privado si falla."""
-    shared_downloads = termux_shared_downloads()
+    """Usa almacenamiento compartido; el privado solo permite abrir el menú."""
     preferred = (
-        shared_downloads / "FlowMobile"
-        if PLATFORM.is_termux and shared_downloads is not None
+        _SHARED_DOWNLOADS / "FlowMobile"
+        if PLATFORM.is_termux and _SHARED_DOWNLOADS is not None
         else BASE_DIR / "Downloads"
     )
     fallback = BASE_DIR / "Downloads"
@@ -31,6 +33,7 @@ def _prepare_download_dir() -> Path:
 
 
 DOWNLOAD_DIR = _prepare_download_dir()
+TERMUX_DOWNLOADS_PUBLIC = not PLATFORM.is_termux or _SHARED_DOWNLOADS is not None
 VIDEO_DIR = DOWNLOAD_DIR / "Videos"
 AUDIO_DIR = DOWNLOAD_DIR / "Audio"
 BATCH_DIR = DOWNLOAD_DIR / "Lotes"
