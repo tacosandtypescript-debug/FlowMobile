@@ -60,10 +60,13 @@ class InstallerCompatibilityTests(unittest.TestCase):
         self.assertIn("move_saved_media", installer)
         self.assertNotIn('"$APP_DIR/Downloads"', installer)
 
-    def test_termux_sharing_does_not_require_optional_api_app(self):
+    def test_termux_sharing_uses_core_command_before_optional_api(self):
+        installer = (ROOT / "install-termux.sh").read_text(encoding="utf-8")
         device = (ROOT / "flow" / "infrastructure" / "device.py").read_text(encoding="utf-8")
-        self.assertIn('["termux-open", "--send", portable_path]', device)
-        self.assertNotIn("termux-share", device)
+        self.assertIn("curl termux-tools", installer)
+        self.assertIn('"termux-open",', device)
+        self.assertIn('shutil.which("termux-share")', device)
+        self.assertLess(device.index('"termux-open",'), device.index('shutil.which("termux-share")'))
 
     def test_ios_bootstrap_requests_latest_installer_from_api(self):
         content = (ROOT / "bootstrap_ios.py").read_text(encoding="utf-8")

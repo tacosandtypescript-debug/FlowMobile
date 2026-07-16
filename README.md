@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.6.8**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.6.9**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
@@ -73,6 +73,15 @@ flow
 - Historial y ajustes se guardan en `.flowmobile`, fuera de las descargas
   públicas.
 - El instalador conserva descargas, historial y ajustes durante actualizaciones.
+
+Para encontrarlos manualmente en Android:
+
+- videos: **Archivos › Almacenamiento interno › Movies › FlowMobile**;
+- audios: **Archivos › Almacenamiento interno › Music › FlowMobile**.
+
+Desde esas carpetas también se puede mantener pulsado un archivo y elegir
+**Compartir**. FlowMobile intenta primero el selector incluido en Termux y usa
+`termux-share` como respaldo solamente si Termux:API ya está instalado.
 
 ## Actualizaciones
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import mimetypes
 from pathlib import Path
 import shutil
 import subprocess
@@ -9,8 +10,8 @@ from flow.infrastructure.platform import PLATFORM
 
 def _run(command: list[str]) -> bool:
     try:
-        return subprocess.run(command, check=False).returncode == 0
-    except OSError:
+        return subprocess.run(command, check=False, timeout=20).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
         return False
 
 
@@ -27,7 +28,24 @@ def open_share(path: Path) -> bool:
     portable_path = path.as_posix()
     if PLATFORM.is_termux:
         scan_media(path)
-        return _run(["termux-open", "--send", portable_path])
+        content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        if _run([
+            "termux-open",
+            "--send",
+            "--chooser",
+            "--content-type",
+            content_type,
+            portable_path,
+        ]):
+            return True
+        if shutil.which("termux-share") is not None:
+            return _run([
+                "termux-share",
+                "-a", "send",
+                "-c", content_type,
+                portable_path,
+            ])
+        return False
     return _run(["open", portable_path])
 
 

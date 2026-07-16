@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## 7.6.9 — 2026-07-16
+
+- Selector de aplicaciones Android forzado al compartir desde Termux.
+- Instalación y actualización explícita de `termux-tools`, que proporciona `termux-open`.
+- Tipo MIME explícito para vídeos, audios y otros archivos.
+- Respaldo opcional mediante `termux-share` cuando Termux:API ya está disponible.
+- Tiempo máximo para impedir que una integración Android bloquee el menú.
+- Ruta humana de Movies o Music mostrada después de cada descarga.
+- Instrucciones para localizar y compartir manualmente desde la aplicación Archivos.
+
 ## 7.6.8 — 2026-07-16
 
 - Vídeos de Termux guardados en `Android/Movies/FlowMobile` para que aparezcan en la galería.

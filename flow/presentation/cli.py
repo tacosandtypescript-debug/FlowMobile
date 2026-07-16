@@ -403,9 +403,19 @@ class FlowCLI:
 
     def after_download(self, path: Path, kind: str) -> None:
         media_label = "AUDIO" if kind == "audio" else "VIDEO"
+        android_location = (
+            "Almacenamiento interno › Music › FlowMobile"
+            if kind == "audio"
+            else "Almacenamiento interno › Movies › FlowMobile"
+        )
         while True:
             print()
             print(f"{GREEN}{BOLD}{media_label} LISTO PARA USAR{RESET}")
+            print(f"{GRAY}Archivo: {path.name}{RESET}")
+            if PLATFORM.is_termux:
+                print(f"{CYAN}Dónde encontrarlo: {android_location}{RESET}")
+            else:
+                print(f"{CYAN}Ubicación: {path.parent}{RESET}")
             print(f"{MAGENTA}{BOLD}SIGUIENTE ACCIÓN{RESET}")
             self.menu_item(
                 "1",
@@ -421,6 +431,9 @@ class FlowCLI:
             if choice == "1":
                 if not open_share(path):
                     print(f"{RED}No se pudo abrir la hoja para compartir.{RESET}")
+                    if PLATFORM.is_termux:
+                        print(f"{YELLOW}Alternativa manual:{RESET}")
+                        print(f"{GRAY}Abre Archivos › {android_location}, mantén pulsado el archivo y toca Compartir.{RESET}")
                 else:
                     print(f"{GREEN}Archivo enviado a la vista de {PLATFORM.mobile_os}.{RESET}")
                 self.pause()
@@ -874,6 +887,9 @@ class FlowCLI:
         self.logo("ARCHIVOS")
         for label, folder in (("VIDEOS", VIDEO_DIR), ("AUDIO", AUDIO_DIR)):
             print(f"{MAGENTA}{BOLD}{label}{RESET}  {GRAY}{folder}{RESET}")
+            if PLATFORM.is_termux:
+                android_folder = "Movies › FlowMobile" if label == "VIDEOS" else "Music › FlowMobile"
+                print(f"{CYAN}En Android: Archivos › Almacenamiento interno › {android_folder}{RESET}")
             try:
                 files = sorted(
                     (path for path in folder.iterdir() if path.is_file()),

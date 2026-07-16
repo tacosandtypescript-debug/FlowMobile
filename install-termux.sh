@@ -36,7 +36,7 @@ trap 'exit 1' HUP INT TERM
 
 echo "Preparando Termux…"
 pkg update -y
-pkg install -y python python-pip ffmpeg curl
+pkg install -y python python-pip ffmpeg curl termux-tools
 
 directory_ready() {
     directory=$1

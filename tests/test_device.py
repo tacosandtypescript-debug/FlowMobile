@@ -16,7 +16,26 @@ class DeviceIntegrationTests(unittest.TestCase):
                     self.assertTrue(device.open_share(Path("/tmp/audio.m4a")))
         self.assertEqual(
             run.call_args.args[0],
-            ["termux-open", "--send", "/tmp/audio.m4a"],
+            [
+                "termux-open", "--send", "--chooser", "--content-type",
+                "audio/mp4", "/tmp/audio.m4a",
+            ],
+        )
+
+    def test_termux_share_falls_back_to_optional_api_command(self):
+        failed = SimpleNamespace(returncode=1)
+        completed = SimpleNamespace(returncode=0)
+        platform = SimpleNamespace(is_termux=True)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device, "scan_media", return_value=False):
+                with patch.object(device.shutil, "which", return_value="termux-share"):
+                    with patch.object(
+                        device.subprocess, "run", side_effect=[failed, completed]
+                    ) as run:
+                        self.assertTrue(device.open_share(Path("/tmp/video.mp4")))
+        self.assertEqual(
+            run.call_args_list[1].args[0],
+            ["termux-share", "-a", "send", "-c", "video/mp4", "/tmp/video.mp4"],
         )
 
     def test_ashell_share_uses_open(self):
