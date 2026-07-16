@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 7.6.13 — 2026-07-17
+
+- Adjuntos locales de Codex protegidos para impedir que `git add .` pueda publicarlos.
+- Correo personal retirado de la guía de publicación y sustituido por una dirección privada de GitHub.
+- Comprobaciones automáticas para conservar ambas protecciones en futuras versiones.
+
 ## 7.6.12 — 2026-07-17
 
 - Treinta plataformas nuevas reconocidas por nombre en análisis, errores e historial.

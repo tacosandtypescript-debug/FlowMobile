@@ -80,6 +80,7 @@ try {
         "/Downloads/",
         "/.flowmobile/",
         "/.flowmobile-data/",
+        "/.codex-remote-attachments/",
         "/.ssh/",
         "/.env",
         "/.git-credentials"
@@ -89,6 +90,11 @@ try {
         if (-not $ignore.Contains($pattern)) {
             throw ".gitignore no protege: $pattern"
         }
+    }
+
+    $publishing = Get-Content -Raw -Encoding utf8 PUBLISHING.md
+    if ($publishing -notmatch 'git config user\.email "[^"\r\n]+@users\.noreply\.github\.com"') {
+        throw "PUBLISHING.md debe recomendar un correo privado de GitHub."
     }
 
     Write-Host "Estructura, privacidad, version y finales de linea: OK" -ForegroundColor Green

@@ -34,6 +34,14 @@ class PublicReleaseTests(unittest.TestCase):
             script.index("$env:pythonLocation"), script.index("Get-Command py")
         )
 
+    def test_local_codex_attachments_are_ignored(self):
+        gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn("/.codex-remote-attachments/", gitignore)
+
+    def test_publishing_uses_a_private_github_email(self):
+        publishing = (ROOT / "PUBLISHING.md").read_text(encoding="utf-8")
+        self.assertIn("@users.noreply.github.com", publishing)
+
 
 if __name__ == "__main__":
     unittest.main()

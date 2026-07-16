@@ -65,6 +65,7 @@ __pycache__/
 # CONFIGURACIÓN LOCAL DEL EDITOR Y DEL EQUIPO
 # ------------------------------------------------------------
 /.codex/
+/.codex-remote-attachments/
 /.agents/
 /.vscode/
 /.idea/
