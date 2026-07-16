@@ -42,7 +42,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript@gmail.com"
 git add .
 git status
-git commit -m "Normalizar rutas del limpiador de FlowMobile 7.6.5"
+git commit -m "Normalizar rutas del limpiador de FlowMobile 7.6.6"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -78,8 +78,8 @@ primero la prueba completa en Termux y después repítela en a-Shell.
 Cuando `main` esté verde y la matriz de `docs/DEVICE_TESTING.md` esté completa:
 
 ```powershell
-git tag -a v7.6.5 -m "FlowMobile 7.6.5"
-git push origin v7.6.5
+git tag -a v7.6.6 -m "FlowMobile 7.6.6"
+git push origin v7.6.6
 ```
 
 La acción `Release` comprueba que la etiqueta coincida con `VERSION`, ejecuta

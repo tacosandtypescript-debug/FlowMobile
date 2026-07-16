@@ -271,3 +271,8 @@
 ## 6.2 iOS
 
 - Versión base de Flow Media para iOS.
+
+## 7.6.6
+
+- Android (Termux): Corregido el menú de compartir nativo evitando errores de ContentProvider usando `termux-share`.
+- Android (Termux): Mejorada la detección de la galería llamando explícitamente a `termux-media-scan` al terminar de descargar para registrar archivos inmediatamente en Media Store.
