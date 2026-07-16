@@ -32,3 +32,16 @@ body:
       label: Resultado observado y esperado
     validations:
       required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Mensaje de error
+      description: Copia solamente el mensaje visible. Elimina enlaces y rutas personales.
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacidad
+      options:
+        - label: Confirmo que no incluí cookies, contraseñas, tokens ni enlaces privados.
+          required: true

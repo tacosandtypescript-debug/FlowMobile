@@ -3,7 +3,6 @@ from contextlib import contextmanager, redirect_stdout
 from io import StringIO
 import os
 import shutil
-import subprocess
 import sys
 import threading
 from pathlib import Path
@@ -584,41 +583,17 @@ class FlowCLI:
             self.print_history(search_history(query, history))
             self.pause()
 
-    def show_system(self) -> None:
-        self.logo("SISTEMA")
-        print("Plataforma:", f"{PLATFORM.name} ({PLATFORM.mobile_os})")
-        print("Python:", sys.version.split()[0])
-        print("yt-dlp:", yt_dlp.version.__version__)
-        print("Videos:", VIDEO_DIR)
-        print("Audios:", AUDIO_DIR)
-        if PLATFORM.is_termux:
-            storage_label = "Android / públicas" if TERMUX_DOWNLOADS_PUBLIC else "permiso pendiente"
-            print("Almacenamiento:", storage_label)
-        ffmpeg_available, ffprobe_available = tools_status()
-        self._tools_status = (ffmpeg_available, ffprobe_available)
-        try:
-            result = subprocess.run(
-                ["ffmpeg", "-version"],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            print("FFmpeg:", result.stdout.splitlines()[0] if result.stdout else "Disponible")
-        except OSError:
-            print("FFmpeg: no encontrado")
-        print("FFprobe:", "Disponible" if ffprobe_available else "No encontrado")
-        if not ffmpeg_available or not ffprobe_available:
-            print(f"{YELLOW}La conversión inteligente requiere ambas herramientas.{RESET}")
-            if PLATFORM.is_termux:
-                print(f"{GRAY}En Termux usa: pkg install ffmpeg{RESET}")
-            else:
-                print(f"{GRAY}En a-Shell, actualiza la app para recuperar FFmpeg y FFprobe.{RESET}")
-        self.pause()
-
-    def show_repair(self) -> None:
+    def show_system_repair(self) -> None:
         while True:
-            self.logo("MODO REPARAR")
-            print(f"{GRAY}Revisa herramientas sin borrar tus descargas.{RESET}\n")
+            self.logo("SISTEMA Y REPARACIÓN")
+            print(
+                f"{GRAY}{PLATFORM.mobile_os} · {PLATFORM.name} · "
+                f"FlowMobile {APP_VERSION}{RESET}"
+            )
+            if PLATFORM.is_termux:
+                storage = "Android público" if TERMUX_DOWNLOADS_PUBLIC else "permiso pendiente"
+                print(f"{GRAY}Almacenamiento: {storage}{RESET}")
+            print(f"{GRAY}Revisa y repara sin borrar tus descargas.{RESET}\n")
             for status in dependency_statuses():
                 mark = "✓" if status.ok else "!"
                 color = GREEN if status.ok else YELLOW
@@ -966,7 +941,11 @@ class FlowCLI:
                 else:
                     self.menu_item("5", "Actualizaciones")
                 self.section("CONFIGURACIÓN")
-                self.menu_item("6", "Herramientas y ajustes")
+                self.menu_item(
+                    "6",
+                    "Ayuda y herramientas",
+                    "sugerencias · errores · ajustes · reparación",
+                )
                 print()
                 self.menu_item("0", "Salir")
 

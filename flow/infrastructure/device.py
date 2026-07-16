@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from urllib.parse import urlparse
 
 from flow.infrastructure.platform import PLATFORM
 
@@ -61,6 +62,18 @@ def open_share(path: Path) -> bool:
             ])
         return False
     return _run(["open", portable_path])
+
+
+def open_url(url: str) -> bool:
+    """Abre una URL web sin pasarla por un intérprete de órdenes."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname:
+        return False
+    if PLATFORM.is_termux:
+        if shutil.which("termux-open-url") is not None:
+            return _run(["termux-open-url", url])
+        return _run(["termux-open", url])
+    return _run(["open", url])
 
 
 def play_media(path: Path) -> bool:

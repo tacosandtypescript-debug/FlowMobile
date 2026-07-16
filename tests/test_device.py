@@ -46,6 +46,34 @@ class DeviceIntegrationTests(unittest.TestCase):
                 self.assertTrue(device.open_share(Path("/tmp/video.mp4")))
         self.assertEqual(run.call_args.args[0], ["open", "/tmp/video.mp4"])
 
+    def test_ashell_opens_feedback_in_browser(self):
+        completed = SimpleNamespace(returncode=0)
+        platform = SimpleNamespace(is_termux=False)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device.subprocess, "run", return_value=completed) as run:
+                self.assertTrue(device.open_url("https://github.com/example/issues/new"))
+        self.assertEqual(
+            run.call_args.args[0],
+            ["open", "https://github.com/example/issues/new"],
+        )
+
+    def test_termux_opens_feedback_with_native_url_command(self):
+        completed = SimpleNamespace(returncode=0)
+        platform = SimpleNamespace(is_termux=True)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device.shutil, "which", return_value="termux-open-url"):
+                with patch.object(device.subprocess, "run", return_value=completed) as run:
+                    self.assertTrue(device.open_url("https://github.com/example/issues/new"))
+        self.assertEqual(
+            run.call_args.args[0],
+            ["termux-open-url", "https://github.com/example/issues/new"],
+        )
+
+    def test_open_url_rejects_non_https_values(self):
+        with patch.object(device, "_run") as run:
+            self.assertFalse(device.open_url("file:///private/cookies.txt"))
+        run.assert_not_called()
+
     def test_termux_completion_uses_native_notification_when_available(self):
         completed = SimpleNamespace(returncode=0)
         platform = SimpleNamespace(is_termux=True)

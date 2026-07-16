@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.6.11**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.6.12**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
@@ -115,7 +115,7 @@ el siguiente inicio.
 - Barra de progreso suavizada con porcentaje, velocidad y tiempo restante.
 - Aviso sonoro al terminar y notificación nativa opcional mediante Termux:API.
 - Buscador del historial por título, sitio, tipo, calidad o fecha.
-- Modo Reparar para revisar dependencias y retirar únicamente temporales dañados.
+- Sistema y reparación para revisar dependencias y retirar únicamente temporales dañados.
 - Pruebas reales guiadas para 360p, 720p, 1080p, máxima calidad, M4A y MP3.
 - Informes privados con resolución, códecs, tamaño y disponibilidad para compartir.
 - Apertura inmediata del menú mientras las actualizaciones se revisan en segundo plano.
@@ -131,6 +131,32 @@ el siguiente inicio.
 - Interfaz accesible sin borrado de pantalla y opción para desactivar colores.
 - Informe de diagnóstico privado preparado para compartir.
 
+## Plataformas compatibles
+
+FlowMobile reconoce **35 plataformas**. Las cinco principales continúan siendo
+YouTube, TikTok, Facebook, Instagram y X. También identifica Vimeo,
+Dailymotion, Twitch, Reddit, Pinterest, Snapchat, SoundCloud, Bandcamp,
+Mixcloud, Rumble, Bilibili, VK, OK.ru, Tumblr, Flickr, Imgur, Streamable, Kick,
+Bluesky, LinkedIn, Likee, Telegram, BitChute, Odysee, YouNow, Gab, Truth Social,
+Weibo, 9GAG y Coub.
+
+La compatibilidad técnica la proporciona `yt-dlp`. Algunos contenidos pueden
+requerir cookies propias, una cuenta autorizada o estar limitados por país. El
+catálogo se puede consultar dentro de **Ayuda y herramientas → Plataformas
+compatibles**.
+
+## Sugerencias y reportes de errores
+
+Desde **Ayuda y herramientas → Sugerencias y reportes** se puede abrir un
+formulario de GitHub para proponer una mejora o informar un error. FlowMobile
+añade únicamente la versión y el tipo de dispositivo; nunca adjunta cookies,
+enlaces, historial, descargas ni rutas personales. El formulario se abre para
+revisión y solamente se publica cuando la persona pulsa **Enviar** en GitHub.
+
+Los problemas de seguridad usan un reporte privado separado. Las sugerencias y
+los errores normales llegan a la sección pública **Issues** del repositorio y
+pueden generar una notificación en la aplicación de GitHub y por correo.
+
 ## Portapapeles
 
 Al abrir **Nueva descarga**, FlowMobile consulta una sola vez el portapapeles. En
@@ -141,7 +167,7 @@ la descarga automáticamente. Se puede desactivar desde **Ajustes → Portapapel
 
 ## Cookies y sesiones privadas
 
-Desde **Herramientas y ajustes → Cookies y sesiones** se puede importar un
+Desde **Ayuda y herramientas → Cookies y sesiones** se puede importar un
 archivo `cookies.txt` en formato Netscape. FlowMobile lo copia a
 `.flowmobile/sessions`, aplica permisos privados y lo utiliza automáticamente
 al analizar o descargar. La ruta original no se guarda. Las cookies nunca se
@@ -161,7 +187,7 @@ de la dirección IP.
 Durante una transferencia escribe `c` y presiona Enter, o utiliza `Ctrl+C`.
 FlowMobile pausa la
 descarga y protege los archivos `.part`; al pegar el mismo enlace, yt-dlp
-continúa automáticamente. El Modo Reparar no elimina parciales registrados para
+continúa automáticamente. Sistema y reparación no elimina parciales registrados para
 reanudación.
 
 La opción **Lotes y playlists** acepta varios enlaces, extrae los elementos de
@@ -177,7 +203,7 @@ Downloads/Lotes/AAAAMMDD-HHMMSS/Audio
 ## Actualizar, reinstalar o desinstalar
 
 Las actualizaciones normales reemplazan el código y conservan descargas,
-historial, ajustes, cookies y colas. En **Herramientas y ajustes → Desinstalar
+historial, ajustes, cookies y colas. En **Ayuda y herramientas → Desinstalar
 FlowMobile** existen dos opciones:
 
 - **Conservar datos:** elimina el programa y el comando `flow`, pero deja los
@@ -210,7 +236,8 @@ anterior. Las versiones estables se publican en GitHub Releases junto con
 
 ## Diagnóstico y accesibilidad
 
-**Herramientas → Informe de diagnóstico** crea un JSON con versión, plataforma,
+**Ayuda y herramientas → Diagnóstico y pruebas → Informe de diagnóstico** crea
+un JSON con versión, plataforma,
 Python, yt-dlp, EJS, FFmpeg, FFprobe y espacio libre. No contiene enlaces,
 cookies, historial ni rutas personales y puede compartirse desde el sistema.
 
@@ -218,14 +245,15 @@ En **Ajustes → Interfaz** se puede elegir el modo accesible, que evita limpiar
 la pantalla y anuncia el progreso por intervalos. Los colores pueden
 desactivarse desde Ajustes o iniciando con `NO_COLOR=1 flow`.
 
-## Modo Reparar y pruebas reales
+## Sistema, reparación y pruebas reales
 
-La opción **7 · Modo Reparar** comprueba Python, yt-dlp, EJS, FFmpeg y
-FFprobe. Puede reinstalar las dependencias compatibles con el dispositivo y
+La opción **Ayuda y herramientas → Sistema y reparación** comprueba Python,
+yt-dlp, EJS, FFmpeg y FFprobe. Puede reinstalar las dependencias compatibles con el dispositivo y
 limpiar archivos `.part`, `.ytdl`, `.tmp` o conversiones incompletas con más de
 cinco minutos. No elimina vídeos, audios, historial ni ajustes.
 
-La opción **8 · Pruebas reales** ofrece una prueba rápida y una matriz completa.
+La opción **Ayuda y herramientas → Diagnóstico y pruebas → Pruebas reales**
+ofrece una prueba rápida y una matriz completa.
 La completa admite un enlace de YouTube, TikTok, Facebook, Instagram y X, y
 prueba vídeo 360p, 720p, 1080p, máxima calidad, audio M4A y MP3. Los enlaces no
 se escriben en el informe. La comprobación final de Compartir siempre requiere

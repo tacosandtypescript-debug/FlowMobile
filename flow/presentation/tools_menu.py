@@ -4,8 +4,10 @@ from pathlib import Path
 from typing import Any
 
 from flow.domain.formatting import format_bytes
-from flow.infrastructure.device import open_share
+from flow.domain.sites import PLATFORM_GROUPS, supported_platforms
+from flow.infrastructure.device import open_share, open_url
 from flow.infrastructure.diagnostics import save_diagnostic_report
+from flow.infrastructure.feedback import ISSUES_URL, SECURITY_REPORT_URL, feedback_url
 from flow.infrastructure.sessions import import_cookies, remove_cookies, session_status
 from flow.infrastructure.settings import save_settings
 from flow.infrastructure.uninstall import uninstall
@@ -44,28 +46,95 @@ def show_sessions(cli: Any) -> None:
                 cli.pause()
 
 
+def show_supported_platforms(cli: Any) -> None:
+    cli.logo("PLATAFORMAS COMPATIBLES")
+    print(
+        f"{GREEN}✓ {len(supported_platforms())} plataformas reconocidas{RESET}\n"
+        f"{GRAY}El contenido privado puede requerir cookies; la disponibilidad "
+        f"también depende del sitio y la región.{RESET}\n"
+    )
+    for group, names in PLATFORM_GROUPS:
+        print(f"{MAGENTA}{BOLD}{group.upper()}{RESET}")
+        for name in names:
+            print(f"  {CYAN}•{RESET} {name}")
+        print()
+    cli.pause()
+
+
+def show_feedback(cli: Any) -> None:
+    while True:
+        cli.logo("SUGERENCIAS Y REPORTES")
+        print(
+            f"{GRAY}GitHub abrirá un formulario para que lo revises antes de enviarlo. "
+            f"FlowMobile no publica nada automáticamente.{RESET}\n"
+        )
+        cli.menu_item("1", "Enviar una sugerencia", "funciones, plataformas o interfaz")
+        cli.menu_item("2", "Reportar un error", "incluye versión y dispositivo, sin datos privados")
+        cli.menu_item("3", "Problema de seguridad", "reporte privado para el responsable")
+        cli.menu_item("0", "Volver")
+        choice = cli.prompt_choice("Selecciona", {"0", "1", "2", "3"})
+        if choice == "0":
+            return
+        target = {
+            "1": feedback_url("suggestion"),
+            "2": feedback_url("bug"),
+            "3": SECURITY_REPORT_URL,
+        }[choice]
+        if open_url(target):
+            print(
+                f"\n{GREEN}✓ GitHub abierto.{RESET} "
+                f"{GRAY}Revisa el formulario y pulsa Enviar cuando esté listo.{RESET}"
+            )
+        else:
+            print(f"\n{YELLOW}No se pudo abrir GitHub desde la terminal.{RESET}")
+            print(f"{CYAN}{ISSUES_URL}{RESET}")
+        cli.pause()
+
+
+def show_diagnostics_menu(cli: Any) -> None:
+    while True:
+        cli.logo("DIAGNÓSTICO Y PRUEBAS")
+        print(f"{GRAY}Revisa el funcionamiento sin mezclarlo con los ajustes.{RESET}\n")
+        cli.menu_item("1", "Informe de diagnóstico", "privado y preparado para compartir")
+        cli.menu_item("2", "Pruebas reales", "descargan archivos y consumen datos")
+        cli.menu_item("0", "Volver")
+        choice = cli.prompt_choice("Selecciona", {"0", "1", "2"})
+        if choice == "0":
+            return
+        if choice == "1":
+            cli.show_diagnostic()
+        else:
+            cli.show_real_tests()
+
+
 def show_tools(cli: Any) -> None:
     while True:
         with cli.buffered_screen():
-            cli.logo("HERRAMIENTAS")
-            cli.menu_item("1", "Cookies y sesiones")
-            cli.menu_item("2", "Sistema")
-            cli.menu_item("3", "Modo Reparar")
+            cli.logo("AYUDA Y HERRAMIENTAS")
+            cli.section("AYUDA")
+            cli.menu_item("1", "Sugerencias y reportes", "buzón público y seguridad privada")
+            cli.menu_item("2", "Plataformas compatibles", "35 sitios reconocidos")
+            cli.section("PRIVACIDAD Y PREFERENCIAS")
+            cli.menu_item("3", "Cookies y sesiones")
             cli.menu_item("4", "Ajustes")
-            cli.menu_item("5", "Pruebas reales")
-            cli.menu_item("6", "Informe de diagnóstico", "privado y preparado para compartir")
+            cli.section("MANTENIMIENTO")
+            cli.menu_item("5", "Sistema y reparación", "estado, dependencias y temporales")
+            cli.menu_item("6", "Diagnóstico y pruebas", "informe privado y pruebas reales")
             cli.menu_item("7", "Desinstalar FlowMobile")
             cli.menu_item("0", "Volver")
-        choice = cli.prompt_choice("Selecciona", {"0", "1", "2", "3", "4", "5", "6", "7"})
+        choice = cli.prompt_choice(
+            "Selecciona",
+            {"0", "1", "2", "3", "4", "5", "6", "7"},
+        )
         if choice == "0":
             return
         actions = {
-            "1": cli.show_sessions,
-            "2": cli.show_system,
-            "3": cli.show_repair,
+            "1": lambda: show_feedback(cli),
+            "2": lambda: show_supported_platforms(cli),
+            "3": cli.show_sessions,
             "4": cli.show_settings,
-            "5": cli.show_real_tests,
-            "6": cli.show_diagnostic,
+            "5": cli.show_system_repair,
+            "6": lambda: show_diagnostics_menu(cli),
             "7": cli.show_uninstall,
         }
         actions[choice]()

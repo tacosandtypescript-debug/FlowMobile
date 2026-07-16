@@ -1,5 +1,18 @@
 # Historial de versiones
 
+## 7.6.12 — 2026-07-17
+
+- Treinta plataformas nuevas reconocidas por nombre en análisis, errores e historial.
+- Catálogo visible de 35 plataformas dentro de Herramientas y ajustes.
+- Dominios cortos y móviles identificados sin aceptar dominios impostores.
+- Separación clara entre compatibilidad técnica y contenidos que requieren cuenta, cookies o región.
+- Buzón de sugerencias y reportes de errores conectado a GitHub Issues.
+- Reportes de seguridad dirigidos al canal privado de GitHub.
+- Formularios revisables que solo añaden versión y dispositivo, sin datos personales.
+- Submenú reorganizado por ayuda, privacidad y mantenimiento.
+- Sugerencias y reportes visibles como primera opción de Ayuda y herramientas.
+- Sistema y Modo Reparar unificados; diagnóstico y pruebas reunidos sin perder funciones.
+
 ## 7.6.11 — 2026-07-16
 
 - Aviso inmediato cuando GitHub responde después de que el menú ya fue dibujado.
