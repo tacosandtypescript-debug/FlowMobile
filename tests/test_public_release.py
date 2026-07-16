@@ -67,10 +67,23 @@ class PublicReleaseTests(unittest.TestCase):
         android = (ROOT / "docs" / "COPIAR_ANDROID.md").read_text(
             encoding="utf-8"
         )
+        self.assertIn("github.io/FlowMobile/?device=apple", readme)
+        self.assertIn("github.io/FlowMobile/?device=android", readme)
         self.assertIn("docs/COPIAR_IOS.md", readme)
         self.assertIn("docs/COPIAR_ANDROID.md", readme)
         self.assertIn("bootstrap_ios.py | python3 -", ios)
         self.assertIn("install.sh | sh -s --", android)
+
+    def test_mobile_copy_site_has_clipboard_and_legacy_support(self):
+        site = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github" / "workflows" / "pages.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("navigator.clipboard.writeText(command)", site)
+        self.assertIn("document.execCommand('copy')", site)
+        self.assertIn("bootstrap_ios.py | python3 -", site)
+        self.assertIn("install.sh | sh -s --", site)
+        self.assertIn("actions/deploy-pages@v4", workflow)
 
 
 if __name__ == "__main__":

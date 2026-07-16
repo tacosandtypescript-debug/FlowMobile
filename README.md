@@ -3,7 +3,7 @@
 Descarga video o extrae audio desde una interfaz de terminal para **a-Shell en
 iOS** y **Termux en Android**.
 
-Versión actual: **7.6.15**. El comando de ejecución es `flow` en ambas
+Versión actual: **7.6.16**. El comando de ejecución es `flow` en ambas
 plataformas.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
@@ -16,11 +16,13 @@ plataformas.
 
 ## Copiar instalación desde el móvil
 
-[![Copiar para iPhone o iPad](https://img.shields.io/badge/COPIAR_COMANDO-iPhone_%2F_iPad-007AFF?style=for-the-badge&logo=apple&logoColor=white)](docs/COPIAR_IOS.md)
-[![Copiar para Android](https://img.shields.io/badge/COPIAR_COMANDO-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](docs/COPIAR_ANDROID.md)
+[![Copiar para Apple](https://img.shields.io/badge/APPLE-COPIAR_PARA_a--SHELL-0a84ff?style=for-the-badge&logo=apple&logoColor=white)](https://tacosandtypescript-debug.github.io/FlowMobile/?device=apple)
+[![Copiar para Android](https://img.shields.io/badge/ANDROID-COPIAR_PARA_TERMUX-3ddc84?style=for-the-badge&logo=android&logoColor=111111)](https://tacosandtypescript-debug.github.io/FlowMobile/?device=android)
 
-Pulsa el botón de tu dispositivo. Se abrirá un bloque con el icono nativo de
-GitHub para copiar el comando completo sin seleccionar el enlace manualmente.
+Pulsa el botón de tu dispositivo. Se abrirá una página preparada para el móvil
+con un botón que copia el comando completo con un solo toque. Si GitHub Pages
+no abre, usa el respaldo para [iPhone/iPad](docs/COPIAR_IOS.md) o
+[Android](docs/COPIAR_ANDROID.md).
 
 ## Instalación en a-Shell
 

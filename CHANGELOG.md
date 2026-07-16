@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.6.16 — 2026-07-17
+
+- Botones móviles iguales a los de SpaceFlow mediante una página de copia directa.
+- Copia real al portapapeles con un toque y confirmación visible de «¡Copiado!».
+- Selección automática de Apple o Android desde el botón pulsado en GitHub.
+- Diseño adaptable, accesible y compatible con navegadores móviles antiguos.
+- Páginas Markdown conservadas como respaldo si GitHub Pages no está disponible.
+
 ## 7.6.15 — 2026-07-17
 
 - Botones visibles para abrir la instalación de iPhone/iPad o Android desde el móvil.
