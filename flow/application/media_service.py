@@ -49,8 +49,7 @@ class MediaService:
         video_dir: Path | None = None,
         audio_dir: Path | None = None,
     ) -> DownloadResult:
-        final_file: Path | None = None
-        info: dict[str, Any] = {}
+        final_file = None
         try:
             info, final_file = ytdlp_gateway.download(
                 media.url,
@@ -71,6 +70,36 @@ class MediaService:
                 conversion_progress(0.0)
                 final_file = convert_audio(final_file, choice.audio_format)
                 conversion_progress(100.0)
+
+            size = final_file.stat().st_size
+            quality = (
+                media_quality(final_file)
+                if choice.kind == "video"
+                else final_file.suffix.lstrip(".").upper()
+            )
+            warning = None
+            try:
+                save_history({
+                    "date": datetime.now().isoformat(timespec="seconds"),
+                    "title": info.get("title") or media.title,
+                    "platform": media.platform,
+                    "type": choice.kind,
+                    "resolution": quality or (
+                        f"hasta {choice.height}p" if choice.height else "mejor disponible"
+                    ),
+                    "duration": info.get("duration"),
+                    "size": size,
+                    "file": str(final_file),
+                })
+            except HistoryError as exc:
+                warning = str(exc)
+
+            return DownloadResult(
+                ok=True,
+                file=final_file,
+                warning=warning,
+                quality=quality,
+            )
         except KeyboardInterrupt:
             preserved = [final_file] if final_file is not None and final_file.exists() else []
             return DownloadResult(
@@ -80,33 +109,3 @@ class MediaService:
             )
         except Exception as exc:
             return DownloadResult(ok=False, file=final_file, error=exc)
-
-        size = final_file.stat().st_size
-        quality = (
-            media_quality(final_file)
-            if choice.kind == "video"
-            else final_file.suffix.lstrip(".").upper()
-        )
-        warning: str | None = None
-        try:
-            save_history({
-                "date": datetime.now().isoformat(timespec="seconds"),
-                "title": info.get("title") or media.title,
-                "platform": media.platform,
-                "type": choice.kind,
-                "resolution": quality or (
-                    f"hasta {choice.height}p" if choice.height else "mejor disponible"
-                ),
-                "duration": info.get("duration"),
-                "size": size,
-                "file": str(final_file),
-            })
-        except HistoryError as exc:
-            warning = str(exc)
-
-        return DownloadResult(
-            ok=True,
-            file=final_file,
-            warning=warning,
-            quality=quality,
-        )
