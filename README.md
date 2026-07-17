@@ -7,7 +7,7 @@
 Descarga vídeos o extrae audio desde **iOS, Android, Windows y Linux**.
 El comando para abrir la aplicación es `flow`.
 
-Versión actual: **8.0.2**.
+Versión actual: **8.0.3**.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
 [![Última versión](https://img.shields.io/github/v/release/tacosandtypescript-debug/FlowMobile?label=versión&color=7c3aed)](https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest)

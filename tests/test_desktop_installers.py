@@ -146,8 +146,8 @@ class DesktopInstallerTests(unittest.TestCase):
         site = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
         self.assertIn('$HOME/.bashrc', installer)
         self.assertIn('$HOME/.zshrc', installer)
-        self.assertIn('&& . "$HOME/.profile"', guide)
-        self.assertIn('&amp;&amp; . "$HOME/.profile"', site)
+        self.assertIn('export PATH="$HOME/.local/bin:$PATH" && hash -r', guide)
+        self.assertIn('export PATH="$HOME/.local/bin:$PATH" &amp;&amp; hash -r', site)
 
     def test_release_publishes_both_desktop_installers(self):
         workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")

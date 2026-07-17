@@ -253,6 +253,6 @@ echo "Vídeos: $DOWNLOAD_ROOT/FlowMobile/Videos"
 echo "Audios: $DOWNLOAD_ROOT/FlowMobile/Audio"
 case ":$PATH:" in
     *":$BIN_DIR:"*) ;;
-    *) echo "IMPORTANTE · Actívalo en esta terminal con: . \"$HOME/.profile\"" ;;
+    *) echo "IMPORTANTE · Actívalo ahora con: export PATH=\"$BIN_DIR:\$PATH\" && hash -r" ;;
 esac
 echo "Registro: $LOG_FILE"
