@@ -3,7 +3,7 @@
 Descarga vídeos o extrae audio desde **a-Shell en iPhone/iPad** y **Termux en
 Android**. El comando para abrir la aplicación es `flow`.
 
-Versión actual: **7.6.18**.
+Versión actual: **7.6.19**.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
 [![Licencia PolyForm Strict 1.0.0](https://img.shields.io/badge/licencia-PolyForm_Strict_1.0.0-orange.svg)](LICENSE)
@@ -23,6 +23,9 @@ Versión actual: **7.6.18**.
 1. Pulsa el botón de tu dispositivo y toca **Copiar**.
 2. Pega el comando en a-Shell completa o en Termux.
 3. Cuando termine, abre una ventana nueva y escribe `flow`.
+
+El instalador muestra seis pasos simples y, si falla, explica la causa exacta
+sin llenar la terminal de salida técnica.
 
 Si el botón no abre, usa el respaldo para
 [iPhone/iPad](docs/COPIAR_IOS.md) o [Android](docs/COPIAR_ANDROID.md).

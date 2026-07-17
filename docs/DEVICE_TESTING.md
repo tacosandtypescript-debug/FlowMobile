@@ -25,6 +25,14 @@ En cada plataforma comprobar:
 - Importación y eliminación de cookies Netscape propias.
 - Actualización conservando descargas, ajustes y cookies.
 - Fallo simulado de actualización y restauración de la versión anterior.
+- Instalación silenciosa: solo seis etapas y ningún bloque de salida de `pkg`,
+  `pip` o `curl` en modo normal.
+- Fallos simulados de DNS, HTTP 404/429, repositorio de paquetes, `pip`, hash,
+  archivo dañado, falta de espacio y permiso de almacenamiento.
+- Código, causa, detalle original, solución y ruta del registro presentes en
+  cada fallo; salida completa visible con `FLOWMOBILE_VERBOSE=1`.
+- Registro `~/.flowmobile-install.log` reemplazado en cada intento y protegido
+  para el usuario actual.
 - Desinstalación conservando datos y posterior reinstalación.
 - Desinstalación total escribiendo `BORRAR`.
 

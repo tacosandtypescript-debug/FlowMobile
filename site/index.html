@@ -50,14 +50,14 @@
         </article>
         <article class="platform android" id="android">
           <h2>Android</h2>
-          <p>Para <strong>Termux</strong>. Pega las dos líneas juntas y pulsa Enter.</p>
-          <pre class="command" tabindex="0">pkg install -y curl
+          <p>Para <strong>Termux</strong>. Pega el bloque completo y pulsa Enter.</p>
+          <pre class="command" tabindex="0">umask 077; pkg install -y curl &gt; "$HOME/.flowmobile-install.log" 2&gt;&amp;1 || { echo "No se pudo preparar curl:"; tail -n 1 "$HOME/.flowmobile-install.log"; exit 1; }
 curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile</pre>
           <button class="copy" type="button" data-device="android">Copiar para Termux</button>
           <p class="status" role="status" aria-live="polite"></p>
         </article>
       </div>
-      <p class="next">Cuando termine, abre una ventana nueva y ejecuta <code>flow</code>. Si el navegador no permite copiar, mantén pulsado el comando y elige Copiar.</p>
+      <p class="next">Verás seis pasos simples. Si algo falla, FlowMobile mostrará la causa exacta y guardará el detalle técnico. Cuando termine, abre una ventana nueva y ejecuta <code>flow</code>.</p>
     </section>
   </main>
   <script>

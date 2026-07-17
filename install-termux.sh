@@ -18,6 +18,145 @@ PUBLIC_VIDEO_DIR="$SHARED_MOVIE_ROOT/FlowMobile"
 PUBLIC_AUDIO_DIR="$SHARED_MUSIC_ROOT/FlowMobile"
 OLD_BACKED_UP=0
 NEW_INSTALLED=0
+LOG_FILE="${FLOWMOBILE_INSTALL_LOG:-$HOME/.flowmobile-install.log}"
+COMMAND_LOG="$LOG_FILE.command-$$"
+VERBOSE="${FLOWMOBILE_VERBOSE:-0}"
+CURRENT_STAGE="Preparando"
+CURRENT_CODE="FM-TERMUX-INSTALL"
+STEP_NUMBER=0
+FAILURE_REPORTED=0
+
+umask 077
+if ! : 2>/dev/null > "$LOG_FILE"; then
+    echo "✕ Termux no pudo crear el registro privado." >&2
+    echo "Código: FM-TERMUX-PERMISSION" >&2
+    echo "Causa: no se puede escribir en $LOG_FILE" >&2
+    echo "Solución: revisa el espacio y los permisos de Termux." >&2
+    exit 1
+fi
+chmod 600 "$LOG_FILE" 2>/dev/null || true
+printf '%s\n' "FlowMobile installer log" >> "$LOG_FILE"
+exec 3>&2
+exec 2>> "$LOG_FILE"
+
+step_start() {
+    STEP_NUMBER=$((STEP_NUMBER + 1))
+    CURRENT_STAGE=$1
+    CURRENT_CODE=$2
+    printf '[%s/6] %s…\n' "$STEP_NUMBER" "$CURRENT_STAGE"
+    printf '\n== %s ==\n' "$CURRENT_STAGE" >> "$LOG_FILE"
+}
+
+step_done() {
+    if [ -n "${1:-}" ]; then
+        printf '      ✓ Listo · %s\n' "$1"
+    else
+        echo "      ✓ Listo"
+    fi
+}
+
+run_logged() {
+    : > "$COMMAND_LOG"
+    printf '+ %s\n' "$*" >> "$LOG_FILE"
+    if "$@" > "$COMMAND_LOG" 2>&1; then
+        status=0
+    else
+        status=$?
+    fi
+    cat "$COMMAND_LOG" >> "$LOG_FILE"
+    if [ "$VERBOSE" = "1" ]; then cat "$COMMAND_LOG"; fi
+    rm -f "$COMMAND_LOG"
+    return "$status"
+}
+
+run_network() {
+    if run_logged "$@"; then return 0; else status=$?; fi
+    if ! tail -n 30 "$LOG_FILE" | grep -Eqi \
+        'Could not resolve|Name or service not known|Connection timed out|Failed to connect|Network is unreachable|Temporary failure|Too Many Requests|HTTP[^0-9]*429|HTTP[^0-9]*50[0-9]'; then
+        return "$status"
+    fi
+    echo "      • La red falló; reintentando una vez…"
+    sleep 1
+    run_logged "$@"
+}
+
+last_log_line() {
+    awk 'NF {line=$0} END {if (line) print substr(line, 1, 300)}' "$LOG_FILE"
+}
+
+report_failure() {
+    status=${1:-1}
+    code=$CURRENT_CODE
+    cause="La instalación falló durante «$CURRENT_STAGE»."
+    hint="Consulta el registro y repite el comando de instalación."
+    if grep -Eqi 'No space left|not enough space|ENOSPC' "$LOG_FILE"; then
+        code="FM-TERMUX-SPACE"
+        cause="No queda espacio suficiente en el dispositivo."
+        hint="Libera espacio en Android y vuelve a ejecutar el instalador."
+    elif grep -Eqi 'requested URL returned error: 404|HTTP[^0-9]*404' "$LOG_FILE"; then
+        code="FM-TERMUX-HTTP-404"
+        cause="GitHub no encontró uno de los archivos del release."
+        hint="Confirma que exista una versión estable o espera unos minutos y repite."
+    elif grep -Eqi 'requested URL returned error: 403|HTTP[^0-9]*403' "$LOG_FILE"; then
+        code="FM-TERMUX-HTTP-403"
+        cause="GitHub rechazó temporalmente la descarga."
+        hint="Cambia de red o espera unos minutos antes de repetir."
+    elif grep -Eqi 'requested URL returned error: 429|HTTP[^0-9]*429|Too Many Requests' "$LOG_FILE"; then
+        code="FM-TERMUX-HTTP-429"
+        cause="GitHub limitó temporalmente las descargas."
+        hint="Espera unos minutos o cambia de red antes de repetir."
+    elif grep -Eqi 'Could not resolve|Name or service not known|Connection timed out|Failed to connect|Network is unreachable' "$LOG_FILE"; then
+        code="FM-TERMUX-NETWORK"
+        cause="Termux no pudo conectarse a internet."
+        hint="Comprueba Wi-Fi, datos, DNS o VPN y repite el mismo comando."
+    elif grep -Eqi 'THESE PACKAGES DO NOT MATCH THE HASHES|HashMismatch|hashes.*do not match' "$LOG_FILE"; then
+        code="FM-TERMUX-INTEGRITY"
+        cause="Una dependencia no coincide con su hash de seguridad."
+        hint="No fuerces la instalación; vuelve a copiar el enlace del repositorio oficial."
+    elif grep -Eqi 'incompleto o dañado|not a gzip file|Unexpected EOF|unexpected end of file' "$LOG_FILE"; then
+        code="FM-TERMUX-ARCHIVE"
+        cause="El paquete descargado está incompleto o dañado."
+        hint="Repite la instalación con una conexión estable."
+    elif [ "$CURRENT_CODE" = "FM-TERMUX-PKG" ]; then
+        cause="Termux no pudo preparar Python, FFmpeg o sus herramientas."
+        hint="Ejecuta termux-change-repo, elige otro servidor y repite la instalación."
+    elif [ "$CURRENT_CODE" = "FM-TERMUX-PIP" ]; then
+        cause="pip no pudo instalar yt-dlp y EJS."
+        hint="Actualiza Termux, comprueba internet y repite la instalación."
+    elif [ "$CURRENT_CODE" = "FM-TERMUX-STORAGE" ]; then
+        cause="Android no concedió acceso al almacenamiento compartido."
+        hint="Concede Archivos y contenido multimedia a Termux y ejecuta termux-setup-storage."
+    elif [ "$CURRENT_CODE" = "FM-TERMUX-INTEGRITY" ]; then
+        cause="La verificación de seguridad no coincide."
+        hint="No omitas esta comprobación; reinstala desde el repositorio oficial."
+    elif [ "$CURRENT_CODE" = "FM-TERMUX-DOWNLOAD" ]; then
+        cause="No se pudo descargar el release oficial de GitHub."
+        hint="Comprueba internet o espera unos minutos si GitHub está limitando descargas."
+    elif [ "$CURRENT_CODE" = "FM-TERMUX-LAUNCHER" ]; then
+        cause="No se pudo registrar el comando flow."
+        hint="Cierra Termux, ábrelo de nuevo y repite la instalación."
+    elif grep -Eqi 'Permission denied|Operation not permitted' "$LOG_FILE"; then
+        code="FM-TERMUX-PERMISSION"
+        cause="Termux no tiene permiso para escribir uno de los archivos."
+        hint="Revisa los permisos de Termux y vuelve a ejecutar el instalador."
+    fi
+    detail=$(last_log_line)
+    [ -n "$detail" ] || detail="El comando terminó con código $status"
+    printf '\n✕ Instalación detenida en: %s\n' "$CURRENT_STAGE" >&3
+    printf 'Código: %s\n' "$code" >&3
+    printf 'Causa: %s\n' "$cause" >&3
+    printf 'Detalle: %s\n' "$detail" >&3
+    printf 'Solución: %s\n' "$hint" >&3
+    printf 'Registro completo: %s\n' "$LOG_FILE" >&3
+    printf 'Para verlo: cat %s\n' "$LOG_FILE" >&3
+    FAILURE_REPORTED=1
+}
+
+fail_install() {
+    status=${1:-1}
+    report_failure "$status"
+    exit "$status"
+}
 
 finish_installation() {
     status=$?
@@ -28,16 +167,27 @@ finish_installation() {
             mv "$BACKUP_DIR" "$APP_DIR"
             echo "La actualización falló; se restauró la versión anterior."
         fi
+        if [ "$FAILURE_REPORTED" -eq 0 ]; then report_failure "$status"; fi
     fi
     rm -rf "$WORK_DIR"
+    rm -f "$COMMAND_LOG"
     exit "$status"
 }
 trap finish_installation EXIT
 trap 'exit 1' HUP INT TERM
 
-echo "Preparando Termux…"
-pkg update -y
-pkg install -y python python-pip ffmpeg curl termux-tools
+echo
+echo "FlowMobile · Instalación para Termux"
+echo "La salida técnica se guardará en un registro privado."
+echo
+
+step_start "Preparando" "FM-TERMUX-PREPARE"
+mkdir -p "$WORK_DIR" "$BIN_DIR"
+step_done "entorno listo"
+
+step_start "Dependencias" "FM-TERMUX-PKG"
+run_network pkg update -y || fail_install $?
+run_network pkg install -y python python-pip ffmpeg curl termux-tools || fail_install $?
 
 directory_ready() {
     directory=$1
@@ -59,7 +209,7 @@ shared_storage_ready() {
 
 if ! shared_storage_ready; then
     echo "Android solicitará permiso para acceder a Descargas."
-    termux-setup-storage || true
+    run_logged termux-setup-storage || true
 fi
 
 attempt=0
@@ -68,14 +218,14 @@ while ! shared_storage_ready && [ "$attempt" -lt 15 ]; do
     attempt=$((attempt + 1))
 done
 if ! shared_storage_ready; then
-    echo "FlowMobile necesita acceso a Descargas para no ocultar los archivos."
-    echo "Concede el permiso de archivos a Termux, ejecuta termux-setup-storage y repite la instalación."
-    exit 1
+    CURRENT_CODE="FM-TERMUX-STORAGE"
+    printf '%s\n' "Android no concedió acceso a $SHARED_DOWNLOAD_ROOT" >> "$LOG_FILE"
+    fail_install 1
 fi
 mkdir -p "$PUBLIC_DOWNLOAD_DIR/Lotes" "$PUBLIC_VIDEO_DIR/Lotes" "$PUBLIC_AUDIO_DIR/Lotes"
+step_done "Python, FFmpeg y almacenamiento"
 
-echo "Instalando FlowMobile para Termux…"
-mkdir -p "$WORK_DIR" "$BIN_DIR"
+step_start "Descargando" "FM-TERMUX-DOWNLOAD"
 cd "$HOME"
 case "$BRANCH" in
     v[0-9]*|[0-9]*) ;;
@@ -85,28 +235,44 @@ case "$BRANCH" in
             exit 1
         fi
         echo "Aviso: instalación de desarrollo sin verificación de release."
-        curl -fL "https://github.com/$REPOSITORY/archive/refs/heads/$BRANCH.tar.gz" -o "$ARCHIVE"
+        run_network curl -fsSL --connect-timeout 15 --max-time 180 \
+            "https://github.com/$REPOSITORY/archive/refs/heads/$BRANCH.tar.gz" -o "$ARCHIVE" || fail_install $?
         ;;
 esac
 if [ ! -s "$ARCHIVE" ]; then
     VERSION=${BRANCH#v}
     ASSET="FlowMobile-$VERSION.tar.gz"
     RELEASE_URL="https://github.com/$REPOSITORY/releases/download/$BRANCH"
-    curl -fL "$RELEASE_URL/SHA256SUMS" -o "$CHECKSUMS"
-    curl -fL "$RELEASE_URL/$ASSET" -o "$ARCHIVE"
+    run_network curl -fsSL --connect-timeout 15 --max-time 180 \
+        "$RELEASE_URL/SHA256SUMS" -o "$CHECKSUMS" || fail_install $?
+    run_network curl -fsSL --connect-timeout 15 --max-time 180 \
+        "$RELEASE_URL/$ASSET" -o "$ARCHIVE" || fail_install $?
+    step_done "release oficial"
+
+    step_start "Verificando" "FM-TERMUX-INTEGRITY"
     EXPECTED=$(awk -v file="$ASSET" '$2 == file || $2 == "*" file {print $1; exit}' "$CHECKSUMS")
     ACTUAL=$(sha256sum "$ARCHIVE" | awk '{print $1}')
+    ACTUAL=${ACTUAL#\\}
     [ -n "$EXPECTED" ] && [ "$ACTUAL" = "$EXPECTED" ] || {
-        echo "Seguridad: el paquete no coincide con el SHA-256 oficial."
-        exit 1
+        printf 'SHA esperado: %s\nSHA obtenido: %s\n' "$EXPECTED" "$ACTUAL" >> "$LOG_FILE"
+        printf '%s\n' "El paquete no coincide con el SHA-256 oficial." >> "$LOG_FILE"
+        fail_install 1
     }
-    echo "SHA-256 del release: verificado."
 fi
-tar -tzf "$ARCHIVE" | awk '
+if [ "$STEP_NUMBER" -eq 3 ]; then
+    step_done "archivo descargado"
+    step_start "Verificando" "FM-TERMUX-INTEGRITY"
+fi
+TAR_LIST="$WORK_DIR/archive.list"
+if ! tar -tzf "$ARCHIVE" > "$TAR_LIST"; then
+    printf '%s\n' "El paquete descargado está incompleto o dañado." >> "$LOG_FILE"
+    fail_install 1
+fi
+awk '
     /^\// || /(^|\/)\.\.($|\/)/ { unsafe=1 }
     END { exit unsafe ? 1 : 0 }
-' || { echo "Seguridad: el paquete contiene rutas no seguras."; exit 1; }
-tar -xzf "$ARCHIVE" -C "$WORK_DIR"
+' "$TAR_LIST" >> "$LOG_FILE" 2>&1 || { printf '%s\n' "El paquete contiene rutas no seguras." >> "$LOG_FILE"; fail_install 1; }
+run_logged tar -xzf "$ARCHIVE" -C "$WORK_DIR" || fail_install $?
 
 SOURCE_DIR=""
 for candidate in "$WORK_DIR"/*; do
@@ -115,11 +281,15 @@ for candidate in "$WORK_DIR"/*; do
         break
     fi
 done
-[ -n "$SOURCE_DIR" ] || { echo "El paquete de FlowMobile no es válido."; exit 1; }
-python3 "$SOURCE_DIR/scripts/security_manifest.py" --check "$SOURCE_DIR" || {
-    echo "Seguridad: el código instalado no coincide con el manifiesto oficial."
-    exit 1
+[ -n "$SOURCE_DIR" ] || { printf '%s\n' "El paquete de FlowMobile no es válido." >> "$LOG_FILE"; fail_install 1; }
+run_logged python3 "$SOURCE_DIR/scripts/security_manifest.py" --check "$SOURCE_DIR" || {
+    printf '%s\n' "El código instalado no coincide con el manifiesto oficial." >> "$LOG_FILE"
+    fail_install 1
 }
+VERSION=$(tr -d '\r\n' < "$SOURCE_DIR/VERSION")
+step_done "SHA-256 · v$VERSION"
+
+step_start "Instalando" "FM-TERMUX-INSTALL"
 
 EXISTING_DIR=""
 if [ -d "$APP_DIR" ]; then
@@ -193,14 +363,24 @@ for saved in "$DATA_BACKUP_DIR" "$BACKUP_DIR"; do
 done
 
 printf '%s\n' "$REPOSITORY" > "$APP_DIR/.flowmobile-source"
-cp "$APP_DIR/scripts/flow" "$BIN_DIR/flow"
-chmod +x "$BIN_DIR/flow"
-python3 -m pip install --disable-pip-version-check --require-hashes \
-    --only-binary=:all: --no-deps --upgrade -r "$APP_DIR/requirements.lock"
-[ -f "$APP_DIR/main.py" ] && [ -d "$APP_DIR/flow" ] && [ -f "$APP_DIR/VERSION" ]
+CURRENT_CODE="FM-TERMUX-PIP"
+run_network python3 -m pip install --disable-pip-version-check --require-hashes \
+    --only-binary=:all: --no-deps --upgrade --quiet --progress-bar=off \
+    --retries 1 --timeout 30 -r "$APP_DIR/requirements.lock" || fail_install $?
+CURRENT_CODE="FM-TERMUX-INSTALL"
+[ -f "$APP_DIR/main.py" ] && [ -d "$APP_DIR/flow" ] && [ -f "$APP_DIR/VERSION" ] || fail_install 1
+step_done "aplicación y datos preparados"
+
+step_start "Activando flow" "FM-TERMUX-LAUNCHER"
+run_logged cp "$APP_DIR/scripts/flow" "$BIN_DIR/flow" || fail_install $?
+run_logged chmod +x "$BIN_DIR/flow" || fail_install $?
+[ -x "$BIN_DIR/flow" ] || fail_install 1
+step_done "comando registrado"
 rm -rf "$DATA_BACKUP_DIR"
 
-echo "FlowMobile instalado para Android."
+echo
+echo "✓ FlowMobile $VERSION instalado correctamente."
+echo "Abre ahora con: flow"
 echo "Videos para la galería: $PUBLIC_VIDEO_DIR"
 echo "Audios: $PUBLIC_AUDIO_DIR"
-echo "Escribe: flow"
+echo "Registro: $LOG_FILE"

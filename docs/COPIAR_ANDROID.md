@@ -4,7 +4,7 @@ Abre **Termux**. Pulsa el icono de copiar situado en la esquina del bloque y
 pega las dos líneas juntas en la terminal:
 
 ```sh
-pkg install -y curl
+umask 077; pkg install -y curl > "$HOME/.flowmobile-install.log" 2>&1 || { echo "No se pudo preparar curl:"; tail -n 1 "$HOME/.flowmobile-install.log"; exit 1; }
 curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
 
