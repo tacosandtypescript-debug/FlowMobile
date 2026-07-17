@@ -1,11 +1,16 @@
 # FlowMobile
 
+<p align="center">
+  <img src="site/assets/flowmobile-cover.jpg" alt="FlowMobile en iPhone, Android, Windows y Linux" width="100%">
+</p>
+
 Descarga vídeos o extrae audio desde **iOS, Android, Windows y Linux**.
 El comando para abrir la aplicación es `flow`.
 
-Versión actual: **8.0.0**.
+Versión actual: **8.0.1**.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
+[![Última versión](https://img.shields.io/github/v/release/tacosandtypescript-debug/FlowMobile?label=versión&color=7c3aed)](https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest)
 [![Licencia PolyForm Strict 1.0.0](https://img.shields.io/badge/licencia-PolyForm_Strict_1.0.0-orange.svg)](LICENSE)
 
 > **Repositorio oficial:** `tacosandtypescript-debug/FlowMobile`.

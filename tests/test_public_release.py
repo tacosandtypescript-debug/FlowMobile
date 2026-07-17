@@ -109,9 +109,18 @@ class PublicReleaseTests(unittest.TestCase):
     def test_readme_stays_short_and_links_to_detailed_guide(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertLessEqual(len(readme.splitlines()), 75)
+        self.assertIn("site/assets/flowmobile-cover.jpg", readme)
         self.assertIn("docs/GUIA_COMPLETA.md", readme)
         self.assertIn("github.io/FlowMobile/?device=apple", readme)
         self.assertIn("github.io/FlowMobile/?device=android", readme)
+
+    def test_public_brand_assets_and_social_preview_exist(self):
+        assets = ROOT / "site" / "assets"
+        self.assertGreater((assets / "flowmobile-cover.jpg").stat().st_size, 10_000)
+        self.assertGreater((assets / "flowmobile-icon.png").stat().st_size, 10_000)
+        site = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('property="og:image"', site)
+        self.assertIn('rel="icon"', site)
 
 
 if __name__ == "__main__":
