@@ -107,15 +107,9 @@ class TermuxInstallerExperienceTests(unittest.TestCase):
         for name, body in (commands or {}).items():
             self._command(fake_bin, name, body)
         environment = os.environ.copy()
-        fake_path = self._shell_path(fake_bin)
-        if os.name == "nt":
-            shell_path = f"{fake_path}:/usr/bin:/bin"
-        else:
-            shell_path = fake_path + os.pathsep + environment.get("PATH", "")
         environment.update(
             HOME=self._shell_path(root / "home"),
             PREFIX=self._shell_path(root / "prefix"),
-            PATH=shell_path,
             FLOWMOBILE_BRANCH="v7.6.19",
             FLOWMOBILE_INSTALL_LOG=self._shell_path(root / "install.log"),
         )
@@ -128,7 +122,15 @@ class TermuxInstallerExperienceTests(unittest.TestCase):
             }
         environment.update(extra_environment or {})
         result = subprocess.run(
-            ["sh", self._shell_path(ROOT / "install-termux.sh"), "owner/repository"],
+            [
+                "sh",
+                "-c",
+                'PATH="$1:/usr/bin:/bin"; export PATH; exec sh "$2" "$3"',
+                "flowmobile-test",
+                self._shell_path(fake_bin),
+                self._shell_path(ROOT / "install-termux.sh"),
+                "owner/repository",
+            ],
             capture_output=True,
             text=True,
             encoding="utf-8",
