@@ -3,7 +3,7 @@
 Abre una terminal, copia el comando completo y pulsa Enter:
 
 ```sh
-curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-linux.sh | sh -s -- tacosandtypescript-debug/FlowMobile && . "$HOME/.profile"
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-linux.sh | sh -s -- tacosandtypescript-debug/FlowMobile && export PATH="$HOME/.local/bin:$PATH" && hash -r
 ```
 
 El instalador reconoce `apt`, `dnf`, `pacman` y `zypper`. Solo solicita `sudo`
@@ -25,5 +25,5 @@ cat "$HOME/.flowmobile-install.log"
 Modo con salida completa:
 
 ```sh
-curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-linux.sh | FLOWMOBILE_VERBOSE=1 sh -s -- tacosandtypescript-debug/FlowMobile && . "$HOME/.profile"
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-linux.sh | FLOWMOBILE_VERBOSE=1 sh -s -- tacosandtypescript-debug/FlowMobile && export PATH="$HOME/.local/bin:$PATH" && hash -r
 ```

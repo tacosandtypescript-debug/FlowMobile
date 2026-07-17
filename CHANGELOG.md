@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 8.0.3 — 2026-07-17
+
+- El enlace Linux activa `~/.local/bin` directamente en la terminal actual.
+- Ya no depende de que Pop!_OS, Ubuntu u otra distribución recargue `.profile`.
+- Se limpia la caché de comandos del shell antes de que el usuario ejecute `flow`.
+
 ## 8.0.2 — 2026-07-17
 
 - El instalador Linux activa `flow` en la terminal actual desde el comando público.
