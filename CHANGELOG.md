@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 8.0.2 — 2026-07-17
+
+- El instalador Linux activa `flow` en la terminal actual desde el comando público.
+- El PATH queda registrado también en Bash o Zsh para las siguientes terminales.
+- La desinstalación limpia de forma segura los bloques añadidos a todos los perfiles.
+- Mensaje de activación más visible cuando la terminal todavía conserva el PATH anterior.
+
 ## 8.0.1 — 2026-07-17
 
 - Nueva identidad visual con portada e icono originales para FlowMobile.

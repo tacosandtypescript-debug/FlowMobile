@@ -140,6 +140,15 @@ class DesktopInstallerTests(unittest.TestCase):
         self.assertIn("security_manifest.py", installer)
         self.assertIn("FM-LINUX-INTEGRITY", installer)
 
+    def test_linux_activates_flow_in_current_and_future_shells(self):
+        installer = (ROOT / "install-linux.sh").read_text(encoding="utf-8")
+        guide = (ROOT / "docs" / "COPIAR_LINUX.md").read_text(encoding="utf-8")
+        site = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('$HOME/.bashrc', installer)
+        self.assertIn('$HOME/.zshrc', installer)
+        self.assertIn('&& . "$HOME/.profile"', guide)
+        self.assertIn('&amp;&amp; . "$HOME/.profile"', site)
+
     def test_release_publishes_both_desktop_installers(self):
         workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
         self.assertIn("install-windows.ps1", workflow)

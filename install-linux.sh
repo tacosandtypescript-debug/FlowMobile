@@ -220,15 +220,25 @@ cat > "$BIN_DIR/flow" <<EOF
 exec "$APP_DIR/.venv/bin/python" "$APP_DIR/main.py" "\$@"
 EOF
 chmod 755 "$BIN_DIR/flow" || { fail 1; exit $?; }
-PROFILE="$HOME/.profile"
-if ! grep -F '# >>> FlowMobile desktop >>>' "$PROFILE" >/dev/null 2>&1; then
-    cat >> "$PROFILE" <<'EOF'
+register_path() {
+    PROFILE_FILE=$1
+    touch "$PROFILE_FILE" || return 1
+    if grep -F '# >>> FlowMobile desktop >>>' "$PROFILE_FILE" >/dev/null 2>&1; then
+        return 0
+    fi
+    cat >> "$PROFILE_FILE" <<'EOF'
 # >>> FlowMobile desktop >>>
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin:$PATH" ;; esac
 export PATH
 # <<< FlowMobile desktop <<<
 EOF
-fi
+}
+register_path "$HOME/.profile" || { fail 1; exit $?; }
+LOGIN_SHELL=${SHELL:-}
+case "${LOGIN_SHELL##*/}" in
+    bash) register_path "$HOME/.bashrc" || { fail 1; exit $?; } ;;
+    zsh) register_path "$HOME/.zshrc" || { fail 1; exit $?; } ;;
+esac
 "$BIN_DIR/flow" --health-check >> "$LOG_FILE" 2>&1 || { fail 1; exit $?; }
 rm -rf "$BACKUP_DIR"
 rm -rf "$PRESERVED_DIR"
@@ -241,5 +251,8 @@ echo "✓ FlowMobile $VERSION instalado correctamente."
 echo "Comando: flow"
 echo "Vídeos: $DOWNLOAD_ROOT/FlowMobile/Videos"
 echo "Audios: $DOWNLOAD_ROOT/FlowMobile/Audio"
-echo "Si esta terminal no reconoce flow: . \"$HOME/.profile\""
+case ":$PATH:" in
+    *":$BIN_DIR:"*) ;;
+    *) echo "IMPORTANTE · Actívalo en esta terminal con: . \"$HOME/.profile\"" ;;
+esac
 echo "Registro: $LOG_FILE"
