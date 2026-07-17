@@ -152,7 +152,8 @@ class DesktopInstallerTests(unittest.TestCase):
                 with redirect_stdout(output), self.assertRaises(SystemExit) as stopped:
                     runpy.run_path(str(ROOT / "main.py"), run_name="__main__")
         self.assertEqual(stopped.exception.code, 0)
-        self.assertIn("FlowMobile 8.0.0: OK", output.getvalue())
+        version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+        self.assertIn(f"FlowMobile {version}: OK", output.getvalue())
 
     def test_health_check_rejects_missing_ffmpeg(self):
         error = StringIO()

@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 8.0.1 — 2026-07-17
+
+- Nueva identidad visual con portada e icono originales para FlowMobile.
+- Portada del repositorio más clara, con insignia de la última versión estable.
+- Página de instalación con marca visual, favicon y vista previa al compartir enlaces.
+- Mensajes posteriores a copiar adaptados correctamente a cada plataforma.
+
 ## 8.0.0 — 2026-07-17
 
 - Soporte nativo para ejecutar FlowMobile desde Windows Terminal y terminales Linux.
