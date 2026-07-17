@@ -74,6 +74,18 @@ class PublicReleaseTests(unittest.TestCase):
         self.assertIn("bootstrap_ios.py | python3 -", ios)
         self.assertIn("install.sh | sh -s --", android)
 
+    def test_desktop_copy_buttons_use_official_installers(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        windows = (ROOT / "docs" / "COPIAR_WINDOWS.md").read_text(encoding="utf-8")
+        linux = (ROOT / "docs" / "COPIAR_LINUX.md").read_text(encoding="utf-8")
+        site = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("?device=windows", readme)
+        self.assertIn("?device=linux", readme)
+        self.assertIn("install-windows.ps1 | iex", windows)
+        self.assertIn("install-linux.sh | sh -s --", linux)
+        self.assertIn("install-windows.ps1 | iex", site)
+        self.assertIn("install-linux.sh | sh -s --", site)
+
     def test_mobile_copy_site_has_clipboard_and_legacy_support(self):
         site = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
         workflow = (ROOT / ".github" / "workflows" / "pages.yml").read_text(

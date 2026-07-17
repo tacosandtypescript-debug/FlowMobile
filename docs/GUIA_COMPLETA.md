@@ -7,6 +7,8 @@ Para instalar rápidamente, vuelve a la [portada](../README.md).
 
 - iPhone/iPad: aplicación **a-Shell completa**; a-Shell mini no incluye Python.
 - Android: una versión reciente de **Termux** procedente de GitHub o F-Droid.
+- Windows 10/11: **PowerShell 5.1** o posterior y App Installer (`winget`).
+- Linux: distribución con `apt`, `dnf`, `pacman` o `zypper`.
 - Conexión a internet y espacio suficiente para los archivos elegidos.
 
 ## Instalación manual
@@ -22,6 +24,18 @@ En Termux:
 ```sh
 umask 077; pkg install -y curl > "$HOME/.flowmobile-install.log" 2>&1 || { echo "No se pudo preparar curl:"; tail -n 1 "$HOME/.flowmobile-install.log"; exit 1; }
 curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
+```
+
+En Windows PowerShell:
+
+```powershell
+irm https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-windows.ps1 | iex
+```
+
+En Linux:
+
+```sh
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-linux.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
 
 El instalador prepara Python, yt-dlp, EJS y FFmpeg cuando el dispositivo lo
@@ -61,6 +75,8 @@ archivo no coincide con el release oficial y la instalación debe detenerse.
   `Music/FlowMobile`.
 - Android registra los archivos terminados en el catálogo multimedia para que
   aparezcan en la galería.
+- Windows y Linux guardan en `Downloads/FlowMobile/Videos` y
+  `Downloads/FlowMobile/Audio` (o en `FLOWMOBILE_DOWNLOADS`).
 - Desde Historial o Mis archivos se puede reproducir, localizar o compartir una
   descarga.
 

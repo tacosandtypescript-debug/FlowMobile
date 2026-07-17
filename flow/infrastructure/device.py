@@ -17,6 +17,14 @@ def _run(command: list[str]) -> bool:
         return False
 
 
+def _windows_open(target: str) -> bool:
+    try:
+        os.startfile(target)  # type: ignore[attr-defined]
+        return True
+    except OSError:
+        return False
+
+
 def scan_media(path: Path) -> bool:
     """Registra el archivo en MediaStore con API o con el broadcast de Android."""
     if not PLATFORM.is_termux:
@@ -61,6 +69,10 @@ def open_share(path: Path) -> bool:
                 portable_path,
             ])
         return False
+    if getattr(PLATFORM, "is_windows", False):
+        return _run(["explorer.exe", "/select,", str(path.resolve())])
+    if getattr(PLATFORM, "is_linux", False):
+        return _run(["xdg-open", str(path.resolve().parent)])
     return _run(["open", portable_path])
 
 
@@ -73,6 +85,10 @@ def open_url(url: str) -> bool:
         if shutil.which("termux-open-url") is not None:
             return _run(["termux-open-url", url])
         return _run(["termux-open", url])
+    if getattr(PLATFORM, "is_windows", False):
+        return _windows_open(url)
+    if getattr(PLATFORM, "is_linux", False):
+        return _run(["xdg-open", url])
     return _run(["open", url])
 
 
@@ -80,12 +96,18 @@ def play_media(path: Path) -> bool:
     portable_path = path.as_posix()
     if PLATFORM.is_termux:
         return _run(["termux-open", portable_path])
+    if getattr(PLATFORM, "is_windows", False):
+        return _windows_open(str(path.resolve()))
+    if getattr(PLATFORM, "is_linux", False):
+        return _run(["xdg-open", str(path.resolve())])
     return _run(["play", portable_path])
 
 
 def notify_complete(path: Path) -> bool:
     """Usa notificación Android cuando existe y conserva el timbre universal."""
     print("\a", end="", flush=True)
+    if getattr(PLATFORM, "is_linux", False) and shutil.which("notify-send") is not None:
+        return _run(["notify-send", "FlowMobile", f"Descarga terminada: {path.name}"])
     if not PLATFORM.is_termux:
         return True
     scan_media(path)

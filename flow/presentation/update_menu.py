@@ -64,7 +64,7 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
             cli.record_update_check(check)
         )
     ffmpeg_pending = check.ffmpeg_pending
-    termux_tools_missing = PLATFORM.is_termux and not (
+    repairable_tools_missing = (PLATFORM.is_termux or PLATFORM.is_desktop) and not (
         ffmpeg_available and ffprobe_available
     )
 
@@ -107,7 +107,7 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
     if check.error:
         print(f"{YELLOW}No se pudo verificar todo: {check.error[:180]}{RESET}")
 
-    if flow_pending or ytdlp_pending or ffmpeg_pending or termux_tools_missing:
+    if flow_pending or ytdlp_pending or ffmpeg_pending or repairable_tools_missing:
         print()
         selected = cli.prompt_choice("¿Quieres actualizar ahora? [1] Sí  [2] No", {"1", "2"})
         if selected == "2":
@@ -124,9 +124,9 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
             else:
                 print(f"{RED}✗ No se pudo actualizar yt-dlp: {result.detail}{RESET}")
 
-        if ffmpeg_pending or termux_tools_missing:
-            action = "Instalando" if termux_tools_missing else "Actualizando"
-            print(f"{CYAN}{action} FFmpeg desde Termux…{RESET}")
+        if ffmpeg_pending or repairable_tools_missing:
+            action = "Instalando" if repairable_tools_missing else "Actualizando"
+            print(f"{CYAN}{action} FFmpeg para {PLATFORM.mobile_os}…{RESET}")
             result = update_ffmpeg()
             if result.ok:
                 print(f"{GREEN}✓ FFmpeg preparado.{RESET}")

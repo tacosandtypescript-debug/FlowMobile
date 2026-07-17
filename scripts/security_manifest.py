@@ -17,6 +17,8 @@ ROOT_FILES = {
     "install.sh",
     "install-ios.sh",
     "install-termux.sh",
+    "install-linux.sh",
+    "install-windows.ps1",
     "requirements.txt",
     "requirements.lock",
 }
@@ -30,7 +32,7 @@ def critical_files(root: Path) -> list[Path]:
         files.extend(
             path
             for path in scripts.iterdir()
-            if path.is_file() and (path.suffix in {".py", ".sh"} or path.name == "flow")
+            if path.is_file() and (path.suffix in {".py", ".sh", ".ps1"} or path.name == "flow")
         )
     return sorted(set(files), key=lambda path: path.relative_to(root).as_posix())
 

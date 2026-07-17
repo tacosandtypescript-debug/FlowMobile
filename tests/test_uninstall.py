@@ -99,6 +99,29 @@ class UninstallTests(unittest.TestCase):
             self.assertFalse(movies.exists())
             self.assertFalse(music.exists())
 
+    def test_linux_uninstall_removes_launcher_profile_but_preserves_downloads(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            app = root / ".local" / "share" / "flowmobile"
+            downloads = root / "Downloads" / "FlowMobile"
+            launcher = root / ".local" / "bin" / "flow"
+            (app / "flow").mkdir(parents=True)
+            (app / "main.py").write_text("app", encoding="utf-8")
+            downloads.mkdir(parents=True)
+            (downloads / "video.mp4").write_bytes(b"video")
+            launcher.parent.mkdir(parents=True)
+            launcher.write_text("FlowMobile", encoding="utf-8")
+            (root / ".profile").write_text(
+                "before\n# >>> FlowMobile desktop >>>\nexport PATH=x\n# <<< FlowMobile desktop <<<\nafter\n",
+                encoding="utf-8",
+            )
+            platform = PlatformInfo("linux", "Terminal", "Linux")
+            result = uninstall(False, app, downloads, platform, root)
+            self.assertTrue(result.ok, result.errors)
+            self.assertFalse(launcher.exists())
+            self.assertNotIn("FlowMobile desktop", (root / ".profile").read_text(encoding="utf-8"))
+            self.assertTrue((downloads / "video.mp4").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

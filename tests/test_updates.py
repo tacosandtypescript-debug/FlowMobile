@@ -1,6 +1,8 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+
+from flow.infrastructure.platform import PlatformInfo
 
 from flow.infrastructure.updates import (
     check_available_updates,
@@ -8,10 +10,27 @@ from flow.infrastructure.updates import (
     release_notes_for_version,
     release_notes_from_body,
     update_ytdlp,
+    update_flowmobile,
 )
 
 
 class UpdateTests(unittest.TestCase):
+    def test_desktop_updates_use_the_platform_specific_verified_asset(self):
+        cases = (
+            (PlatformInfo("windows", "Terminal", "Windows"), "install-windows.ps1"),
+            (PlatformInfo("linux", "Terminal", "Linux"), "install-linux.sh"),
+        )
+        for platform, filename in cases:
+            verified = Mock(return_value=b"installer")
+            completed = SimpleNamespace(returncode=0)
+            with self.subTest(platform=platform.key):
+                with patch("flow.infrastructure.updates.PLATFORM", platform):
+                    with patch("flow.infrastructure.updates._verified_release_asset", verified):
+                        with patch("flow.infrastructure.updates.subprocess.run", return_value=completed):
+                            result = update_flowmobile("owner/repository", "v8.0.0")
+            self.assertTrue(result.ok)
+            self.assertEqual(verified.call_args.args[2], filename)
+
     def test_lightweight_check_can_skip_termux_package_catalog(self):
         platform = SimpleNamespace(is_termux=True)
         with patch("flow.infrastructure.updates.PLATFORM", platform):

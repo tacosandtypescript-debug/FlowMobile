@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import os
 from pathlib import Path
 import re
 import shutil
@@ -11,6 +12,8 @@ from flow.infrastructure.platform import PLATFORM, PlatformInfo
 
 PROFILE_START = "# >>> FlowMobile launcher >>>"
 PROFILE_END = "# <<< FlowMobile launcher <<<"
+DESKTOP_PROFILE_START = "# >>> FlowMobile desktop >>>"
+DESKTOP_PROFILE_END = "# <<< FlowMobile desktop <<<"
 PRESERVED_ITEMS = {"Downloads", ".flowmobile", "flow_settings.json"}
 PRESERVED_DATA_NAME = ".flowmobile-data"
 
@@ -64,6 +67,50 @@ def remove_profile_launcher(documents: Path) -> bool:
         content = "\n".join(cleaned).rstrip()
         profile.write_text(content + ("\n" if content else ""), encoding="utf-8")
     return changed
+
+
+def remove_desktop_profile_launcher(home: Path) -> bool:
+    profile = home / ".profile"
+    try:
+        previous = profile.read_text(encoding="utf-8")
+    except (FileNotFoundError, OSError, UnicodeError):
+        return False
+    cleaned: list[str] = []
+    inside = False
+    changed = False
+    for line in previous.splitlines():
+        if line.strip() == DESKTOP_PROFILE_START:
+            inside = changed = True
+            continue
+        if line.strip() == DESKTOP_PROFILE_END:
+            inside = False
+            changed = True
+            continue
+        if not inside:
+            cleaned.append(line)
+    if changed:
+        content = "\n".join(cleaned).rstrip()
+        profile.write_text(content + ("\n" if content else ""), encoding="utf-8")
+    return changed
+
+
+def remove_windows_user_path(directory: Path) -> bool:
+    if os.name != "nt":
+        return False
+    try:
+        import winreg
+
+        access = winreg.KEY_QUERY_VALUE | winreg.KEY_SET_VALUE
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, access) as key:
+            previous, value_type = winreg.QueryValueEx(key, "Path")
+            parts = [part for part in str(previous).split(";") if part]
+            kept = [part for part in parts if Path(part).resolve() != directory.resolve()]
+            if kept == parts:
+                return False
+            winreg.SetValueEx(key, "Path", 0, value_type, ";".join(kept))
+            return True
+    except (ImportError, OSError, ValueError):
+        return False
 
 
 def _remove_path(path: Path, result: UninstallResult) -> None:
@@ -152,6 +199,22 @@ def _remove_launcher(
             if launcher.exists():
                 _remove_path(launcher, result)
         return
+
+    home = documents.parent if documents.name == "Documents" else documents
+    if platform.is_linux:
+        if remove_desktop_profile_launcher(home):
+            result.removed.append(str(home / ".profile") + " (PATH de flow)")
+        known = home / ".local" / "bin" / "flow"
+        if known.exists():
+            _remove_path(known, result)
+    elif platform.is_windows:
+        local_app_data = Path(os.environ.get("LOCALAPPDATA", home / "AppData" / "Local"))
+        launcher_directory = local_app_data / "FlowMobileBin"
+        known = launcher_directory / "flow.cmd"
+        if known.exists():
+            _remove_path(known, result)
+        if remove_windows_user_path(launcher_directory):
+            result.removed.append("PATH de usuario (FlowMobileBin)")
 
     launcher_name = shutil.which("flow")
     if not launcher_name:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Diagnóstico de FlowMobile ejecutable directamente en a-Shell."""
+"""Diagnóstico de FlowMobile ejecutable desde cualquiera de sus terminales."""
 
 from __future__ import annotations
 

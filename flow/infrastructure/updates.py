@@ -7,6 +7,7 @@ import os
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -242,21 +243,30 @@ def update_flowmobile(repository: str, reference: str = "main") -> UpdateResult:
 
     path: Path | None = None
     try:
-        script = _verified_release_asset(repository, reference, "install.sh")
+        if PLATFORM.is_windows:
+            filename, suffix = "install-windows.ps1", ".ps1"
+        elif PLATFORM.is_linux:
+            filename, suffix = "install-linux.sh", ".sh"
+        else:
+            filename, suffix = "install.sh", ".sh"
+        script = _verified_release_asset(repository, reference, filename)
         with tempfile.NamedTemporaryFile(
             mode="wb",
-            suffix=".sh",
+            suffix=suffix,
             delete=False,
         ) as handle:
             handle.write(script)
             path = Path(handle.name)
         environment = os.environ.copy()
         environment["FLOWMOBILE_BRANCH"] = reference
-        result = subprocess.run(
-            ["sh", str(path), repository, "--auto"],
-            check=False,
-            env=environment,
-        )
+        if PLATFORM.is_windows:
+            command = [
+                "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+                "-File", str(path), "-Repository", repository, "-Auto",
+            ]
+        else:
+            command = ["sh", str(path), repository, "--auto"]
+        result = subprocess.run(command, check=False, env=environment)
         if result.returncode == 0:
             return UpdateResult(True, changed=True)
         return UpdateResult(False, detail="El instalador de FlowMobile devolvió un error.")
@@ -268,11 +278,28 @@ def update_flowmobile(repository: str, reference: str = "main") -> UpdateResult:
 
 
 def update_ffmpeg() -> UpdateResult:
-    if not PLATFORM.is_termux:
+    if PLATFORM.is_ashell:
         return UpdateResult(True, detail="FFmpeg está gestionado por a-Shell.")
+    if PLATFORM.is_windows:
+        command = [
+            "winget", "install", "--id", "Gyan.FFmpeg", "--exact", "--silent",
+            "--accept-package-agreements", "--accept-source-agreements",
+        ]
+    elif PLATFORM.is_linux:
+        manager_commands = (
+            ("apt-get", ["sudo", "apt-get", "install", "-y", "ffmpeg"]),
+            ("dnf", ["sudo", "dnf", "install", "-y", "ffmpeg"]),
+            ("pacman", ["sudo", "pacman", "-S", "--needed", "--noconfirm", "ffmpeg"]),
+            ("zypper", ["sudo", "zypper", "--non-interactive", "install", "ffmpeg"]),
+        )
+        command = next((value for name, value in manager_commands if shutil.which(name)), [])
+        if not command:
+            return UpdateResult(False, detail="No se reconoció el gestor de paquetes de Linux.")
+    else:
+        command = ["pkg", "install", "-y", "ffmpeg"]
     try:
         result = subprocess.run(
-            ["pkg", "install", "-y", "ffmpeg"],
+            command,
             capture_output=True,
             text=True,
             check=False,

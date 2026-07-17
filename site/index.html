@@ -56,13 +56,27 @@ curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/lates
           <button class="copy" type="button" data-device="android">Copiar para Termux</button>
           <p class="status" role="status" aria-live="polite"></p>
         </article>
+        <article class="platform windows" id="windows">
+          <h2>Windows</h2>
+          <p>Para <strong>PowerShell o Windows Terminal</strong>. No requiere modo administrador.</p>
+          <pre class="command" tabindex="0">irm https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-windows.ps1 | iex</pre>
+          <button class="copy" type="button" data-device="windows">Copiar para Windows</button>
+          <p class="status" role="status" aria-live="polite"></p>
+        </article>
+        <article class="platform linux" id="linux">
+          <h2>Linux</h2>
+          <p>Para distribuciones con <strong>apt, dnf, pacman o zypper</strong>.</p>
+          <pre class="command" tabindex="0">curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-linux.sh | sh -s -- tacosandtypescript-debug/FlowMobile</pre>
+          <button class="copy" type="button" data-device="linux">Copiar para Linux</button>
+          <p class="status" role="status" aria-live="polite"></p>
+        </article>
       </div>
       <p class="next">Verás seis pasos simples. Si algo falla, FlowMobile mostrará la causa exacta y guardará el detalle técnico. Cuando termine, abre una ventana nueva y ejecuta <code>flow</code>.</p>
     </section>
   </main>
   <script>
     const requestedDevice = new URLSearchParams(window.location.search).get('device');
-    const requestedCard = ['apple', 'android'].includes(requestedDevice)
+    const requestedCard = ['apple', 'android', 'windows', 'linux'].includes(requestedDevice)
       ? document.getElementById(requestedDevice)
       : null;
     if (requestedCard) requestedCard.classList.add('selected');

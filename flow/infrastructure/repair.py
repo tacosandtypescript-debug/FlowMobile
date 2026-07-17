@@ -67,7 +67,7 @@ def repair_dependencies() -> list[tuple[str, UpdateResult]]:
         results.append(("yt-dlp + EJS", update_ytdlp()))
 
     ffmpeg, ffprobe = tools_status()
-    if PLATFORM.is_termux and (not ffmpeg or not ffprobe):
+    if (PLATFORM.is_termux or PLATFORM.is_desktop) and (not ffmpeg or not ffprobe):
         results.append(("FFmpeg + FFprobe", update_ffmpeg()))
     elif PLATFORM.is_ashell and (not ffmpeg or not ffprobe):
         results.append((
