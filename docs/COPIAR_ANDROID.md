@@ -5,7 +5,7 @@ pega las dos líneas juntas en la terminal:
 
 ```sh
 pkg install -y curl
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
 
 Si la aplicación de GitHub no muestra el icono, mantén pulsado el bloque y elige

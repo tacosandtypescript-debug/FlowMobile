@@ -8,6 +8,7 @@ DATA_BACKUP_DIR="$(dirname "$APP_DIR")/.flowmobile-data"
 BIN_DIR="${PREFIX:-$HOME/../usr}/bin"
 WORK_DIR="${TMPDIR:-${PREFIX:-$HOME/../usr}/tmp}/flowmobile-install-$$"
 ARCHIVE="$WORK_DIR/flowmobile.tar.gz"
+CHECKSUMS="$WORK_DIR/SHA256SUMS"
 BACKUP_DIR="$WORK_DIR/previous"
 SHARED_DOWNLOAD_ROOT="$HOME/storage/downloads"
 SHARED_MOVIE_ROOT="$HOME/storage/movies"
@@ -76,9 +77,35 @@ mkdir -p "$PUBLIC_DOWNLOAD_DIR/Lotes" "$PUBLIC_VIDEO_DIR/Lotes" "$PUBLIC_AUDIO_D
 echo "Instalando FlowMobile para Termux…"
 mkdir -p "$WORK_DIR" "$BIN_DIR"
 cd "$HOME"
-if ! curl -fL "https://github.com/$REPOSITORY/archive/refs/heads/$BRANCH.tar.gz" -o "$ARCHIVE"; then
-    curl -fL "https://github.com/$REPOSITORY/archive/refs/tags/$BRANCH.tar.gz" -o "$ARCHIVE"
+case "$BRANCH" in
+    v[0-9]*|[0-9]*) ;;
+    *)
+        if [ "${FLOWMOBILE_ALLOW_UNVERIFIED:-0}" != "1" ]; then
+            echo "Seguridad: solo se permiten releases estables verificados."
+            exit 1
+        fi
+        echo "Aviso: instalación de desarrollo sin verificación de release."
+        curl -fL "https://github.com/$REPOSITORY/archive/refs/heads/$BRANCH.tar.gz" -o "$ARCHIVE"
+        ;;
+esac
+if [ ! -s "$ARCHIVE" ]; then
+    VERSION=${BRANCH#v}
+    ASSET="FlowMobile-$VERSION.tar.gz"
+    RELEASE_URL="https://github.com/$REPOSITORY/releases/download/$BRANCH"
+    curl -fL "$RELEASE_URL/SHA256SUMS" -o "$CHECKSUMS"
+    curl -fL "$RELEASE_URL/$ASSET" -o "$ARCHIVE"
+    EXPECTED=$(awk -v file="$ASSET" '$2 == file || $2 == "*" file {print $1; exit}' "$CHECKSUMS")
+    ACTUAL=$(sha256sum "$ARCHIVE" | awk '{print $1}')
+    [ -n "$EXPECTED" ] && [ "$ACTUAL" = "$EXPECTED" ] || {
+        echo "Seguridad: el paquete no coincide con el SHA-256 oficial."
+        exit 1
+    }
+    echo "SHA-256 del release: verificado."
 fi
+tar -tzf "$ARCHIVE" | awk '
+    /^\// || /(^|\/)\.\.($|\/)/ { unsafe=1 }
+    END { exit unsafe ? 1 : 0 }
+' || { echo "Seguridad: el paquete contiene rutas no seguras."; exit 1; }
 tar -xzf "$ARCHIVE" -C "$WORK_DIR"
 
 SOURCE_DIR=""
@@ -89,6 +116,10 @@ for candidate in "$WORK_DIR"/*; do
     fi
 done
 [ -n "$SOURCE_DIR" ] || { echo "El paquete de FlowMobile no es válido."; exit 1; }
+python3 "$SOURCE_DIR/scripts/security_manifest.py" --check "$SOURCE_DIR" || {
+    echo "Seguridad: el código instalado no coincide con el manifiesto oficial."
+    exit 1
+}
 
 EXISTING_DIR=""
 if [ -d "$APP_DIR" ]; then
@@ -164,7 +195,8 @@ done
 printf '%s\n' "$REPOSITORY" > "$APP_DIR/.flowmobile-source"
 cp "$APP_DIR/scripts/flow" "$BIN_DIR/flow"
 chmod +x "$BIN_DIR/flow"
-python3 -m pip install --disable-pip-version-check --upgrade "yt-dlp[default]"
+python3 -m pip install --disable-pip-version-check --require-hashes \
+    --only-binary=:all: --no-deps --upgrade -r "$APP_DIR/requirements.lock"
 [ -f "$APP_DIR/main.py" ] && [ -d "$APP_DIR/flow" ] && [ -f "$APP_DIR/VERSION" ]
 rm -rf "$DATA_BACKUP_DIR"
 

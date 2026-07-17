@@ -24,6 +24,7 @@ try {
         ".github/workflows/ci.yml",
         ".github/workflows/release.yml",
         ".github/workflows/pages.yml",
+        ".github/dependabot.yml",
         "docs/DEVICE_TESTING.md",
         "docs/COPIAR_IOS.md",
         "docs/COPIAR_ANDROID.md",
@@ -31,6 +32,8 @@ try {
         "site/index.html",
         "main.py",
         "requirements.txt",
+        "requirements.lock",
+        "SECURITY_MANIFEST.sha256",
         "install.sh",
         "install-ios.sh",
         "bootstrap_ios.py",
@@ -41,6 +44,7 @@ try {
         "scripts/flow_ios.py",
         "scripts/check-device.sh",
         "scripts/check_device.py",
+        "scripts/security_manifest.py",
         "flow/__init__.py"
     )
 
@@ -144,6 +148,8 @@ try {
         if ($python) {
             & $python @prefix -m compileall -q flow main.py
             if ($LASTEXITCODE -ne 0) { throw "Python encontro un error de sintaxis." }
+            & $python @prefix scripts/security_manifest.py --check .
+            if ($LASTEXITCODE -ne 0) { throw "El manifiesto de seguridad no coincide con el codigo." }
             & $python @prefix -m unittest discover -s tests -v
             if ($LASTEXITCODE -ne 0) { throw "Fallaron las pruebas de Python." }
         } else {

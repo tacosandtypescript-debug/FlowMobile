@@ -86,7 +86,7 @@ case "$SELECTED_PLATFORM" in
         echo
         echo "a-Shell no puede instalar FlowMobile dentro de sh/dash."
         echo "Ejecuta directamente en a-Shell:"
-        echo "curl -fsSL https://raw.githubusercontent.com/$REPOSITORY/$BRANCH/bootstrap_ios.py | python3 - $REPOSITORY"
+        echo "curl -fsSL https://github.com/$REPOSITORY/releases/latest/download/bootstrap_ios.py | python3 - $REPOSITORY"
         echo "Después cierra esa ventana, abre una nueva y escribe: flow"
         exit 1
         ;;
@@ -96,9 +96,27 @@ echo
 echo "Preparando FlowMobile para $PLATFORM_LABEL…"
 
 TEMP_SCRIPT="${TMPDIR:-$HOME/tmp}/flowmobile-installer-$$.sh"
+TEMP_SUMS="$TEMP_SCRIPT.sha256sums"
 mkdir -p "$(dirname "$TEMP_SCRIPT")"
-trap 'rm -f "$TEMP_SCRIPT"' 0 HUP INT TERM
-curl -fL \
-    "https://raw.githubusercontent.com/$REPOSITORY/$BRANCH/$PLATFORM_INSTALLER" \
-    -o "$TEMP_SCRIPT"
-sh "$TEMP_SCRIPT" "$REPOSITORY"
+trap 'rm -f "$TEMP_SCRIPT" "$TEMP_SUMS"' 0 HUP INT TERM
+case "$BRANCH" in
+    v[0-9]*|[0-9]*)
+        RELEASE_URL="https://github.com/$REPOSITORY/releases/download/$BRANCH"
+        curl -fL "$RELEASE_URL/SHA256SUMS" -o "$TEMP_SUMS"
+        curl -fL "$RELEASE_URL/$PLATFORM_INSTALLER" -o "$TEMP_SCRIPT"
+        EXPECTED=$(awk -v file="$PLATFORM_INSTALLER" '$2 == file || $2 == "*" file {print $1; exit}' "$TEMP_SUMS")
+        ACTUAL=$(sha256sum "$TEMP_SCRIPT" | awk '{print $1}')
+        [ -n "$EXPECTED" ] && [ "$ACTUAL" = "$EXPECTED" ] || {
+            echo "Seguridad: el instalador no coincide con el SHA-256 oficial."
+            exit 1
+        }
+        ;;
+    *)
+        [ "${FLOWMOBILE_ALLOW_UNVERIFIED:-0}" = "1" ] || {
+            echo "Seguridad: no existe un release estable verificable."
+            exit 1
+        }
+        curl -fL "https://raw.githubusercontent.com/$REPOSITORY/$BRANCH/$PLATFORM_INSTALLER" -o "$TEMP_SCRIPT"
+        ;;
+esac
+FLOWMOBILE_BRANCH="$BRANCH" sh "$TEMP_SCRIPT" "$REPOSITORY"

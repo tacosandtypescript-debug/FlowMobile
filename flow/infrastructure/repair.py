@@ -7,7 +7,7 @@ import sys
 import time
 
 from flow.infrastructure.ffmpeg import command_available, tools_status
-from flow.infrastructure.paths import AUDIO_DIR, BATCH_DIR, VIDEO_DIR
+from flow.infrastructure.paths import AUDIO_DIR, BASE_DIR, BATCH_DIR, VIDEO_DIR
 from flow.infrastructure.platform import PLATFORM
 from flow.infrastructure.resume import protected_partial_files
 from flow.infrastructure.updates import UpdateResult, update_ffmpeg, update_ytdlp
@@ -53,8 +53,9 @@ def repair_dependencies() -> list[tuple[str, UpdateResult]]:
             from pip._internal.cli.main import main as pip_main
 
             code = pip_main([
-                "install", "--disable-pip-version-check", "--no-deps",
-                "--upgrade", "yt-dlp", "yt-dlp-ejs",
+                "install", "--disable-pip-version-check", "--require-hashes",
+                "--only-binary=:all:", "--no-deps", "--upgrade", "-r",
+                str(BASE_DIR / "requirements.lock"),
             ])
             results.append((
                 "yt-dlp + EJS",

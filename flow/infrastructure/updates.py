@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
+import hashlib
 import os
 import json
 from pathlib import Path
@@ -103,6 +104,32 @@ def _read_url(url: str, timeout: int = 5) -> str:
         return response.read().decode("utf-8").strip()
 
 
+def _expected_checksum(checksums: str, filename: str) -> str | None:
+    for line in checksums.splitlines():
+        parts = line.strip().split()
+        if len(parts) >= 2 and parts[1].lstrip("*") == filename:
+            return parts[0].lower()
+    return None
+
+
+def _verified_release_asset(repository: str, reference: str, filename: str) -> bytes:
+    if not re.fullmatch(r"v?\d+(?:\.\d+){1,3}", reference):
+        raise ValueError("La actualización no corresponde a una versión publicada.")
+    base = f"https://github.com/{repository}/releases/download/{reference}"
+    checksums = _read_url(f"{base}/SHA256SUMS", timeout=15)
+    expected = _expected_checksum(checksums, filename)
+    if not expected:
+        raise ValueError(f"La versión no publica la firma SHA-256 de {filename}.")
+    request = Request(
+        f"{base}/{filename}", headers={"User-Agent": "FlowMobile-secure-update"}
+    )
+    with urlopen(request, timeout=20) as response:
+        payload = response.read()
+    if hashlib.sha256(payload).hexdigest() != expected:
+        raise ValueError(f"La verificación de seguridad de {filename} falló.")
+    return payload
+
+
 def check_available_updates(include_package_manager: bool = True) -> UpdateCheck:
     repository = configured_repository()
     check = UpdateCheck(repository=repository)
@@ -130,13 +157,7 @@ def check_available_updates(include_package_manager: bool = True) -> UpdateCheck
             # Repositorios nuevos todavía pueden no tener Releases.
             pass
         if not check.flow_latest:
-            try:
-                check.flow_latest = _read_url(
-                    f"https://raw.githubusercontent.com/{repository}/main/VERSION"
-                )
-                check.flow_ref = "main"
-            except (OSError, UnicodeError, URLError) as exc:
-                errors.append(f"FlowMobile: {exc}")
+            errors.append("FlowMobile: no hay una versión estable publicada")
         if check.flow_latest and not check.release_notes:
             try:
                 changelog = _read_url(
@@ -179,14 +200,14 @@ def update_ytdlp() -> UpdateResult:
         before = version("yt-dlp")
     except PackageNotFoundError:
         before = None
-    command = [sys.executable, "-m", "pip", "install", "--disable-pip-version-check"]
-    if PLATFORM.is_termux:
-        command.extend(["--upgrade", "--quiet", "yt-dlp[default]"])
-    else:
-        command.extend([
-            "--no-deps", "--upgrade", "--quiet", "--retries", "1",
-            "--timeout", "15", "yt-dlp", "yt-dlp-ejs",
-        ])
+    lockfile = BASE_DIR / "requirements.lock"
+    if not lockfile.is_file():
+        return UpdateResult(False, detail="Falta requirements.lock; actualiza FlowMobile primero.")
+    command = [
+        sys.executable, "-m", "pip", "install", "--disable-pip-version-check",
+        "--require-hashes", "--only-binary=:all:", "--no-deps", "--upgrade",
+        "--quiet", "--retries", "1", "--timeout", "15", "-r", str(lockfile),
+    ]
     try:
         result = subprocess.run(
             command,
@@ -219,13 +240,11 @@ def update_flowmobile(repository: str, reference: str = "main") -> UpdateResult:
         except (OSError, RuntimeError, ValueError) as exc:
             return UpdateResult(False, detail=str(exc))
 
-    url = f"https://raw.githubusercontent.com/{repository}/{reference}/install.sh"
     path: Path | None = None
     try:
-        script = _read_url(url, timeout=15)
+        script = _verified_release_asset(repository, reference, "install.sh")
         with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
+            mode="wb",
             suffix=".sh",
             delete=False,
         ) as handle:
@@ -241,7 +260,7 @@ def update_flowmobile(repository: str, reference: str = "main") -> UpdateResult:
         if result.returncode == 0:
             return UpdateResult(True, changed=True)
         return UpdateResult(False, detail="El instalador de FlowMobile devolvió un error.")
-    except (OSError, UnicodeError, URLError) as exc:
+    except (OSError, UnicodeError, ValueError, URLError) as exc:
         return UpdateResult(False, detail=str(exc))
     finally:
         if path is not None:
