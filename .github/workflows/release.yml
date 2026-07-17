@@ -35,8 +35,8 @@ jobs:
           mkdir -p release
           git archive --format=tar.gz --prefix="FlowMobile-${VERSION}/" -o "release/FlowMobile-${VERSION}.tar.gz" HEAD
           git archive --format=zip --prefix="FlowMobile-${VERSION}/" -o "release/FlowMobile-${VERSION}.zip" HEAD
-          cp bootstrap_ios.py install_ios.py install.sh install-termux.sh release/
-          (cd release && sha256sum FlowMobile-* bootstrap_ios.py install_ios.py install.sh install-termux.sh > SHA256SUMS)
+          cp bootstrap_ios.py install_ios.py install.sh install-termux.sh install-linux.sh install-windows.ps1 release/
+          (cd release && sha256sum FlowMobile-* bootstrap_ios.py install_ios.py install.sh install-termux.sh install-linux.sh install-windows.ps1 > SHA256SUMS)
           python scripts/release_notes.py "$VERSION" > release/RELEASE_NOTES.md
       - name: Atestar procedencia de los paquetes
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
@@ -48,6 +48,8 @@ jobs:
             release/install_ios.py
             release/install.sh
             release/install-termux.sh
+            release/install-linux.sh
+            release/install-windows.ps1
             release/SHA256SUMS
       - name: Publicar GitHub Release
         env:
@@ -61,6 +63,8 @@ jobs:
             release/install_ios.py \
             release/install.sh \
             release/install-termux.sh \
+            release/install-linux.sh \
+            release/install-windows.ps1 \
             release/SHA256SUMS \
             --verify-tag \
             --title "FlowMobile ${GITHUB_REF_NAME#v}" \

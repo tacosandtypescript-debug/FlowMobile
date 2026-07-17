@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 8.0.0 — 2026-07-17
+
+- Soporte nativo para ejecutar FlowMobile desde Windows Terminal y terminales Linux.
+- Instaladores oficiales de un solo enlace para PowerShell y Linux, con seis etapas y salida silenciosa.
+- Instalación automática de Python y FFmpeg mediante winget, apt, dnf, pacman o zypper.
+- Descargas de escritorio en la carpeta personal, portapapeles nativo y apertura de archivos o ubicaciones.
+- Actualizaciones con SHA-256, prueba `flow --health-check` y rollback antes de retirar la versión anterior.
+
 ## 7.6.19 — 2026-07-17
 
 - Instalación silenciosa en seis etapas para a-Shell y Termux, sin bloques técnicos innecesarios.

@@ -1,16 +1,16 @@
 # FlowMobile
 
-Descarga vídeos o extrae audio desde **a-Shell en iPhone/iPad** y **Termux en
-Android**. El comando para abrir la aplicación es `flow`.
+Descarga vídeos o extrae audio desde **iOS, Android, Windows y Linux**.
+El comando para abrir la aplicación es `flow`.
 
-Versión actual: **7.6.19**.
+Versión actual: **8.0.0**.
 
 [![CI](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml/badge.svg)](https://github.com/tacosandtypescript-debug/FlowMobile/actions/workflows/ci.yml)
 [![Licencia PolyForm Strict 1.0.0](https://img.shields.io/badge/licencia-PolyForm_Strict_1.0.0-orange.svg)](LICENSE)
 
 > **Repositorio oficial:** `tacosandtypescript-debug/FlowMobile`.
 
-## Instalar desde el móvil
+## Instalar
 
 ### iPhone o iPad · a-Shell
 
@@ -20,15 +20,21 @@ Versión actual: **7.6.19**.
 
 [![Copiar para Android](https://img.shields.io/badge/ANDROID-COPIAR_PARA_TERMUX-3ddc84?style=for-the-badge&logo=android&logoColor=111111)](https://tacosandtypescript-debug.github.io/FlowMobile/?device=android)
 
+### Windows Terminal y Linux
+
+[![Copiar para Windows](https://img.shields.io/badge/WINDOWS-COPIAR_PARA_POWERSHELL-0078d4?style=for-the-badge&logo=windows11&logoColor=white)](https://tacosandtypescript-debug.github.io/FlowMobile/?device=windows)
+[![Copiar para Linux](https://img.shields.io/badge/LINUX-COPIAR_PARA_TERMINAL-fcc624?style=for-the-badge&logo=linux&logoColor=111111)](https://tacosandtypescript-debug.github.io/FlowMobile/?device=linux)
+
 1. Pulsa el botón de tu dispositivo y toca **Copiar**.
-2. Pega el comando en a-Shell completa o en Termux.
+2. Pega el comando en la terminal indicada.
 3. Cuando termine, abre una ventana nueva y escribe `flow`.
 
 El instalador muestra seis pasos simples y, si falla, explica la causa exacta
 sin llenar la terminal de salida técnica.
 
 Si el botón no abre, usa el respaldo para
-[iPhone/iPad](docs/COPIAR_IOS.md) o [Android](docs/COPIAR_ANDROID.md).
+[iPhone/iPad](docs/COPIAR_IOS.md), [Android](docs/COPIAR_ANDROID.md),
+[Windows](docs/COPIAR_WINDOWS.md) o [Linux](docs/COPIAR_LINUX.md).
 
 ## Funciones principales
 
@@ -45,6 +51,8 @@ Si el botón no abre, usa el respaldo para
 |---|---|---|
 | iPhone/iPad | `FlowMobile/Downloads` | `FlowMobile/Downloads` |
 | Android | `Movies/FlowMobile` | `Music/FlowMobile` |
+| Windows | `Downloads/FlowMobile/Videos` | `Downloads/FlowMobile/Audio` |
+| Linux | `Downloads/FlowMobile/Videos` | `Downloads/FlowMobile/Audio` |
 
 ## Ayuda y documentación
 

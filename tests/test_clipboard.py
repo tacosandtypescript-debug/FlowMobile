@@ -1,5 +1,7 @@
 import subprocess
+from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock
 
 from flow.domain.urls import extract_web_urls, is_web_url
 from flow.infrastructure.clipboard import clipboard_urls
@@ -30,6 +32,18 @@ class ClipboardTests(unittest.TestCase):
 
         platform = PlatformInfo("termux", "Termux", "Android")
         self.assertEqual(clipboard_urls(platform, runner), [])
+
+    def test_windows_uses_powershell_clipboard(self):
+        runner = Mock(return_value=SimpleNamespace(returncode=0, stdout="https://youtube.com/watch?v=1"))
+        platform = PlatformInfo("windows", "Terminal", "Windows")
+        self.assertEqual(clipboard_urls(platform, runner), ["https://youtube.com/watch?v=1"])
+        self.assertEqual(runner.call_args.args[0][:2], ["powershell", "-NoProfile"])
+
+    def test_linux_falls_back_between_clipboard_tools(self):
+        runner = Mock(side_effect=[OSError("missing"), SimpleNamespace(returncode=0, stdout="https://x.com/a/status/1")])
+        platform = PlatformInfo("linux", "Terminal", "Linux")
+        self.assertEqual(clipboard_urls(platform, runner), ["https://x.com/a/status/1"])
+        self.assertEqual(runner.call_args_list[1].args[0][0], "xclip")
 
 
 if __name__ == "__main__":

@@ -4,12 +4,16 @@ case "${TERMUX_VERSION:-}:${PREFIX:-}" in
         APP_DIR="${FLOWMOBILE_HOME:-$HOME/FlowMobile}"
         ;;
     *)
-        DOCUMENTS="$HOME"
-        case "$DOCUMENTS" in
-            */Documents) ;;
-            *) DOCUMENTS="$HOME/Documents" ;;
-        esac
-        APP_DIR="${FLOWMOBILE_HOME:-$DOCUMENTS/FlowMobile}"
+        if [ "$(uname -s 2>/dev/null || true)" = "Linux" ]; then
+            APP_DIR="${FLOWMOBILE_HOME:-$HOME/.local/share/flowmobile}"
+        else
+            DOCUMENTS="$HOME"
+            case "$DOCUMENTS" in
+                */Documents) ;;
+                *) DOCUMENTS="$HOME/Documents" ;;
+            esac
+            APP_DIR="${FLOWMOBILE_HOME:-$DOCUMENTS/FlowMobile}"
+        fi
         ;;
 esac
 
@@ -20,6 +24,9 @@ if [ ! -f "$APP_DIR/main.py" ]; then
 fi
 
 PYTHON_COMMAND="${FLOWMOBILE_PYTHON:-}"
+if [ -z "$PYTHON_COMMAND" ] && [ -x "$APP_DIR/.venv/bin/python" ]; then
+    PYTHON_COMMAND="$APP_DIR/.venv/bin/python"
+fi
 if [ -z "$PYTHON_COMMAND" ]; then
     for candidate in python3 python; do
         if command -v "$candidate" >/dev/null 2>&1; then
@@ -30,7 +37,7 @@ if [ -z "$PYTHON_COMMAND" ]; then
 fi
 if [ -z "$PYTHON_COMMAND" ]; then
     echo "Python no está disponible."
-    echo "En iOS instala y abre a-Shell completo; a-Shell mini no es compatible."
+    echo "Vuelve a ejecutar el instalador oficial de tu sistema."
     exit 1
 fi
 

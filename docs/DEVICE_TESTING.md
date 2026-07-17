@@ -6,6 +6,8 @@ Esta matriz debe completarse antes de crear una etiqueta estable.
 
 - Probar en una instalación limpia de a-Shell en iOS.
 - Probar en una instalación limpia de Termux procedente de F-Droid o GitHub.
+- Probar en Windows 10/11 con PowerShell 5.1 y PowerShell 7.
+- Probar al menos Ubuntu/Debian y una distribución con `dnf` o `pacman`.
 - Ejecutar `python3 scripts/check_device.py` en a-Shell.
 - Ejecutar `sh scripts/check-device.sh` en Termux.
 - Confirmar que todas las pruebas automatizadas terminan correctamente.
@@ -16,6 +18,7 @@ En cada plataforma comprobar:
 
 - Instalación inicial mediante el enlace público.
 - Apertura de `flow` desde una ventana nueva.
+- Resultado correcto de `flow --health-check` y `flow --version`.
 - Detección y confirmación de una URL del portapapeles.
 - Vídeo 360p, 720p y 1080p.
 - Audio M4A y MP3.

@@ -82,8 +82,13 @@ case "${TERMUX_VERSION:-}:${PREFIX:-}" in
         DETECTED_LABEL="Android con Termux"
         ;;
     *)
-        DETECTED_PLATFORM="ashell"
-        DETECTED_LABEL="iPhone/iPad con a-Shell"
+        if [ "$(uname -s 2>/dev/null || true)" = "Linux" ]; then
+            DETECTED_PLATFORM="linux"
+            DETECTED_LABEL="Linux"
+        else
+            DETECTED_PLATFORM="ashell"
+            DETECTED_LABEL="iPhone/iPad con a-Shell"
+        fi
         ;;
 esac
 
@@ -95,10 +100,11 @@ fi
 case "$SELECTED_PLATFORM" in
     android|termux) SELECTED_PLATFORM="termux" ;;
     ios|ashell|a-shell) SELECTED_PLATFORM="ashell" ;;
+    linux|desktop-linux) SELECTED_PLATFORM="linux" ;;
     "") ;;
     *)
         echo "Plataforma no válida: $SELECTED_PLATFORM"
-        echo "Usa termux o ashell."
+        echo "Usa termux, ashell o linux."
         exit 1
         ;;
 esac
@@ -111,12 +117,14 @@ if [ -z "$SELECTED_PLATFORM" ]; then
             echo "¿Dónde quieres instalar FlowMobile?"
             echo "  [1] Android — Termux"
             echo "  [2] iPhone/iPad — a-Shell"
-            printf "Selecciona 1 o 2 [Enter = usar lo detectado]: " > /dev/tty
+            echo "  [3] Linux — Terminal"
+            printf "Selecciona 1, 2 o 3 [Enter = usar lo detectado]: " > /dev/tty
             IFS= read -r ANSWER < /dev/tty || ANSWER=""
             case "$ANSWER" in
                 "") SELECTED_PLATFORM="$DETECTED_PLATFORM"; break ;;
                 1) SELECTED_PLATFORM="termux"; break ;;
                 2) SELECTED_PLATFORM="ashell"; break ;;
+                3) SELECTED_PLATFORM="linux"; break ;;
                 *) echo "Opción no válida." ;;
             esac
         done
@@ -148,6 +156,10 @@ case "$SELECTED_PLATFORM" in
         echo "curl -fsSL https://github.com/$REPOSITORY/releases/latest/download/bootstrap_ios.py | python3 - $REPOSITORY"
         echo "Después cierra esa ventana, abre una nueva y escribe: flow"
         exit 1
+        ;;
+    linux)
+        PLATFORM_INSTALLER="install-linux.sh"
+        PLATFORM_LABEL="Linux"
         ;;
 esac
 

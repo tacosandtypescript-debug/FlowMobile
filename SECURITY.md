@@ -7,6 +7,8 @@ Solo la versión estable más reciente recibe correcciones de seguridad.
 ## Protecciones incluidas
 
 - Los instaladores estables verifican `SHA256SUMS` antes de usar el paquete.
+- Windows y Linux conservan la versión anterior hasta que
+  `flow --health-check` valida la instalación nueva.
 - El código ejecutable se compara con `SECURITY_MANIFEST.sha256`.
 - Las dependencias Python se instalan desde `requirements.lock` con hashes.
 - Las cookies se guardan localmente con permisos privados y nunca se incluyen

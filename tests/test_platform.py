@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 
 from flow.infrastructure.platform import (
     PlatformInfo,
+    desktop_downloads_directory,
     detect_platform,
     termux_shared_directory,
     termux_shared_downloads,
@@ -23,6 +24,28 @@ class PlatformDetectionTests(unittest.TestCase):
         platform = detect_platform({"HOME": "/private/app/Documents"})
         self.assertTrue(platform.is_ashell)
         self.assertEqual(platform.mobile_os, "iOS")
+
+    def test_windows_and_linux_are_detected_as_desktop(self):
+        windows = detect_platform({"HOME": "C:/Users/Ana"}, system="Windows")
+        linux = detect_platform({"HOME": "/home/ana"}, system="Linux")
+        self.assertTrue(windows.is_windows)
+        self.assertTrue(linux.is_linux)
+        self.assertTrue(windows.is_desktop)
+        self.assertEqual(windows.mobile_os, "Windows")
+        self.assertEqual(linux.mobile_os, "Linux")
+
+    def test_desktop_downloads_supports_xdg_and_override(self):
+        linux = PlatformInfo("linux", "Terminal", "Linux")
+        windows = PlatformInfo("windows", "Terminal", "Windows")
+        home = Path("/home/ana")
+        self.assertEqual(
+            desktop_downloads_directory(linux, home, {"XDG_DOWNLOAD_DIR": "$HOME/Descargas"}),
+            home / "Descargas",
+        )
+        self.assertEqual(
+            desktop_downloads_directory(windows, Path("C:/Users/Ana"), {"FLOWMOBILE_DOWNLOADS": "D:/Media"}),
+            Path("D:/Media"),
+        )
 
     def test_termux_shared_downloads_requires_real_write_access(self):
         platform = PlatformInfo("termux", "Termux", "Android")

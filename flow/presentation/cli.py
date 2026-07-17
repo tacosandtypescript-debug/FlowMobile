@@ -158,7 +158,7 @@ class FlowCLI:
         except EOFError:
             print(
                 f"\n{YELLOW}La entrada interactiva no está disponible. "
-                f"Abre una ventana nueva de a-Shell y ejecuta flow.{RESET}"
+                f"Abre una terminal nueva y ejecuta flow.{RESET}"
             )
             raise SystemExit(0) from None
 
@@ -439,8 +439,8 @@ class FlowCLI:
             print(f"{MAGENTA}{BOLD}SIGUIENTE ACCIÓN{RESET}")
             self.menu_item(
                 "1",
-                "Compartir / Guardar en Archivos",
-                f"abre la vista de {PLATFORM.mobile_os} para enviar o guardar",
+                "Abrir / Compartir archivo" if getattr(PLATFORM, "is_desktop", False) else "Compartir / Guardar en Archivos",
+                "abre su carpeta en el sistema" if getattr(PLATFORM, "is_desktop", False) else f"abre la vista de {PLATFORM.mobile_os} para enviar o guardar",
             )
             self.menu_item("2", "Reproducir")
             self.menu_item("3", "Mostrar ubicación")
@@ -450,12 +450,13 @@ class FlowCLI:
             choice = self.prompt_choice("Selecciona", {"0", "1", "2", "3", "4"})
             if choice == "1":
                 if not open_share(path):
-                    print(f"{RED}No se pudo abrir la hoja para compartir.{RESET}")
+                    print(f"{RED}No se pudo abrir el archivo o su ubicación.{RESET}")
                     if PLATFORM.is_termux:
                         print(f"{YELLOW}Alternativa manual:{RESET}")
                         print(f"{GRAY}Abre Archivos › {android_location}, mantén pulsado el archivo y toca Compartir.{RESET}")
                 else:
-                    print(f"{GREEN}Archivo enviado a la vista de {PLATFORM.mobile_os}.{RESET}")
+                    message = "Ubicación abierta." if getattr(PLATFORM, "is_desktop", False) else f"Archivo enviado a la vista de {PLATFORM.mobile_os}."
+                    print(f"{GREEN}{message}{RESET}")
                 self.pause()
             elif choice == "2":
                 if not play_media(path):

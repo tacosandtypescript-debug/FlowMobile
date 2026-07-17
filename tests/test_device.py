@@ -7,6 +7,22 @@ from flow.infrastructure import device
 
 
 class DeviceIntegrationTests(unittest.TestCase):
+    def test_windows_share_opens_explorer_at_file(self):
+        platform = SimpleNamespace(is_termux=False, is_windows=True, is_linux=False)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device, "_run", return_value=True) as run:
+                self.assertTrue(device.open_share(Path("C:/Media/video.mp4")))
+        self.assertEqual(run.call_args.args[0][0:2], ["explorer.exe", "/select,"])
+
+    def test_linux_share_opens_parent_directory(self):
+        platform = SimpleNamespace(is_termux=False, is_windows=False, is_linux=True)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device, "_run", return_value=True) as run:
+                self.assertTrue(device.open_share(Path("/home/ana/Downloads/video.mp4")))
+        command = run.call_args.args[0]
+        self.assertEqual(command[0], "xdg-open")
+        self.assertTrue(command[1].replace("\\", "/").endswith("/home/ana/Downloads"))
+
     def test_termux_share_uses_android_send_action(self):
         completed = SimpleNamespace(returncode=0)
         platform = SimpleNamespace(is_termux=True)

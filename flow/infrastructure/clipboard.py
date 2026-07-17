@@ -15,17 +15,29 @@ def clipboard_urls(
     runner: Runner = subprocess.run,
 ) -> list[str]:
     """Lee únicamente URLs del portapapeles y falla silenciosamente si no hay API."""
-    command = ["pbpaste"] if platform.is_ashell else ["termux-clipboard-get"]
-    try:
-        result = runner(
-            command,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=2,
+    if platform.is_ashell:
+        commands = (["pbpaste"],)
+    elif platform.is_termux:
+        commands = (["termux-clipboard-get"],)
+    elif platform.is_windows:
+        commands = (["powershell", "-NoProfile", "-Command", "Get-Clipboard -Raw"],)
+    else:
+        commands = (
+            ["wl-paste", "--no-newline"],
+            ["xclip", "-selection", "clipboard", "-o"],
+            ["xsel", "--clipboard", "--output"],
         )
-    except (OSError, subprocess.TimeoutExpired):
-        return []
-    if result.returncode != 0:
-        return []
-    return extract_web_urls(result.stdout)
+    for command in commands:
+        try:
+            result = runner(
+                command,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=2,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if result.returncode == 0:
+            return extract_web_urls(result.stdout)
+    return []

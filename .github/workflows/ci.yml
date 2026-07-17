@@ -46,4 +46,4 @@ jobs:
         run: .\scripts\check-release.ps1
       - name: Comprobar scripts POSIX
         shell: bash
-        run: bash -n install.sh install-termux.sh install-ios.sh scripts/flow scripts/check-device.sh
+        run: bash -n install.sh install-termux.sh install-linux.sh install-ios.sh scripts/flow scripts/check-device.sh

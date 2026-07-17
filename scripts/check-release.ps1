@@ -28,6 +28,8 @@ try {
         "docs/DEVICE_TESTING.md",
         "docs/COPIAR_IOS.md",
         "docs/COPIAR_ANDROID.md",
+        "docs/COPIAR_WINDOWS.md",
+        "docs/COPIAR_LINUX.md",
         "docs/GUIA_COMPLETA.md",
         "site/index.html",
         "main.py",
@@ -40,6 +42,8 @@ try {
         "install_ios.py",
         "uninstall_ios.py",
         "install-termux.sh",
+        "install-linux.sh",
+        "install-windows.ps1",
         "scripts/flow",
         "scripts/flow_ios.py",
         "scripts/check-device.sh",
@@ -52,6 +56,17 @@ try {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
             throw "Falta un archivo obligatorio: $path"
         }
+    }
+
+    $desktopInstallerTokens = $null
+    $desktopInstallerErrors = $null
+    [System.Management.Automation.Language.Parser]::ParseFile(
+        (Resolve-Path "install-windows.ps1"),
+        [ref]$desktopInstallerTokens,
+        [ref]$desktopInstallerErrors
+    ) | Out-Null
+    if ($desktopInstallerErrors.Count -gt 0) {
+        throw "install-windows.ps1 contiene errores de sintaxis: $($desktopInstallerErrors[0].Message)"
     }
 
     $version = (Get-Content -Raw -Encoding utf8 VERSION).Trim()
@@ -153,7 +168,7 @@ try {
             & $python @prefix -m unittest discover -s tests -v
             if ($LASTEXITCODE -ne 0) { throw "Fallaron las pruebas de Python." }
         } else {
-            Write-Warning "Python no esta instalado; las pruebas Python se ejecutaran en Termux/a-Shell."
+            Write-Warning "Python no esta instalado; ejecuta las pruebas en un dispositivo compatible."
         }
     }
 

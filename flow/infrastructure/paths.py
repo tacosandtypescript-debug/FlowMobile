@@ -2,6 +2,7 @@ from pathlib import Path
 
 from flow.infrastructure.platform import (
     PLATFORM,
+    desktop_downloads_directory,
     termux_shared_directory,
     termux_shared_downloads,
 )
@@ -15,15 +16,17 @@ QUEUE_DIR = STATE_DIR / "queues"
 _SHARED_DOWNLOADS = termux_shared_downloads()
 _SHARED_MOVIES = termux_shared_directory("movies")
 _SHARED_MUSIC = termux_shared_directory("music")
+_DESKTOP_DOWNLOADS = desktop_downloads_directory()
 
 
 def _prepare_download_dir() -> Path:
     """Usa almacenamiento compartido; el privado solo permite abrir el menú."""
-    preferred = (
-        _SHARED_DOWNLOADS / "FlowMobile"
-        if PLATFORM.is_termux and _SHARED_DOWNLOADS is not None
-        else BASE_DIR / "Downloads"
-    )
+    if PLATFORM.is_termux and _SHARED_DOWNLOADS is not None:
+        preferred = _SHARED_DOWNLOADS / "FlowMobile"
+    elif PLATFORM.is_desktop and _DESKTOP_DOWNLOADS is not None:
+        preferred = _DESKTOP_DOWNLOADS / "FlowMobile"
+    else:
+        preferred = BASE_DIR / "Downloads"
     fallback = BASE_DIR / "Downloads"
     last_error: OSError | None = None
 
