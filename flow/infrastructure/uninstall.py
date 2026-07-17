@@ -70,28 +70,31 @@ def remove_profile_launcher(documents: Path) -> bool:
 
 
 def remove_desktop_profile_launcher(home: Path) -> bool:
-    profile = home / ".profile"
-    try:
-        previous = profile.read_text(encoding="utf-8")
-    except (FileNotFoundError, OSError, UnicodeError):
-        return False
-    cleaned: list[str] = []
-    inside = False
-    changed = False
-    for line in previous.splitlines():
-        if line.strip() == DESKTOP_PROFILE_START:
-            inside = changed = True
+    changed_any = False
+    for profile_name in (".profile", ".bashrc", ".zshrc"):
+        profile = home / profile_name
+        try:
+            previous = profile.read_text(encoding="utf-8")
+        except (FileNotFoundError, OSError, UnicodeError):
             continue
-        if line.strip() == DESKTOP_PROFILE_END:
-            inside = False
-            changed = True
-            continue
-        if not inside:
-            cleaned.append(line)
-    if changed:
-        content = "\n".join(cleaned).rstrip()
-        profile.write_text(content + ("\n" if content else ""), encoding="utf-8")
-    return changed
+        cleaned: list[str] = []
+        inside = False
+        changed = False
+        for line in previous.splitlines():
+            if line.strip() == DESKTOP_PROFILE_START:
+                inside = changed = True
+                continue
+            if line.strip() == DESKTOP_PROFILE_END:
+                inside = False
+                changed = True
+                continue
+            if not inside:
+                cleaned.append(line)
+        if changed:
+            content = "\n".join(cleaned).rstrip()
+            profile.write_text(content + ("\n" if content else ""), encoding="utf-8")
+            changed_any = True
+    return changed_any
 
 
 def remove_windows_user_path(directory: Path) -> bool:
@@ -203,7 +206,7 @@ def _remove_launcher(
     home = documents.parent if documents.name == "Documents" else documents
     if platform.is_linux:
         if remove_desktop_profile_launcher(home):
-            result.removed.append(str(home / ".profile") + " (PATH de flow)")
+            result.removed.append(str(home) + " (PATH de flow en perfiles de terminal)")
         known = home / ".local" / "bin" / "flow"
         if known.exists():
             _remove_path(known, result)
