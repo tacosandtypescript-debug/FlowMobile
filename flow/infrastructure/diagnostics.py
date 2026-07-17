@@ -11,6 +11,7 @@ from flow import APP_NAME, APP_VERSION
 from flow.infrastructure.ffmpeg import tools_status
 from flow.infrastructure.paths import STATE_DIR, VIDEO_DIR
 from flow.infrastructure.platform import PLATFORM
+from flow.infrastructure.security import security_status
 
 
 def _package_version(name: str) -> str:
@@ -22,6 +23,7 @@ def _package_version(name: str) -> str:
 
 def diagnostic_data() -> dict[str, object]:
     ffmpeg, ffprobe = tools_status()
+    security = security_status()
     try:
         storage = shutil.disk_usage(VIDEO_DIR)
         free_storage: int | None = storage.free
@@ -44,6 +46,11 @@ def diagnostic_data() -> dict[str, object]:
             "ffprobe": ffprobe,
         },
         "free_storage_bytes": free_storage,
+        "security": {
+            "official_source": security.official_source,
+            "integrity_ok": security.integrity_ok,
+            "cookies_private": security.cookies_private,
+        },
     }
 
 

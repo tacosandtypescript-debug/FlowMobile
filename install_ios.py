@@ -9,6 +9,7 @@ este instalador realiza toda la preparación dentro del mismo proceso Python.
 from __future__ import annotations
 
 import os
+import hashlib
 from pathlib import Path
 import re
 import shutil
@@ -38,7 +39,39 @@ def _download(url: str, destination: Path) -> None:
         shutil.copyfileobj(response, output)
 
 
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _expected_checksum(text: str, filename: str) -> str:
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[-1].lstrip("*") == filename:
+            value = parts[0].lower()
+            if re.fullmatch(r"[0-9a-f]{64}", value):
+                return value
+    raise RuntimeError(f"SHA-256 no publicado para {filename}.")
+
+
 def _download_source_archive(repository: str, reference: str, destination: Path) -> None:
+    if re.fullmatch(r"v?\d+(?:\.\d+){1,3}", reference):
+        version = reference.lstrip("v")
+        filename = f"FlowMobile-{version}.tar.gz"
+        base = f"https://github.com/{repository}/releases/download/{reference}"
+        checksum_file = destination.with_name("SHA256SUMS")
+        _download(f"{base}/SHA256SUMS", checksum_file)
+        _download(f"{base}/{filename}", destination)
+        expected = _expected_checksum(checksum_file.read_text(encoding="utf-8"), filename)
+        if _sha256(destination) != expected:
+            destination.unlink(missing_ok=True)
+            raise RuntimeError("El paquete no coincide con el SHA-256 del release oficial.")
+        return
+    if os.environ.get("FLOWMOBILE_ALLOW_UNVERIFIED") != "1":
+        raise RuntimeError("Solo se permiten releases estables verificados.")
     candidates = (
         f"https://github.com/{repository}/archive/refs/heads/{reference}.tar.gz",
         f"https://github.com/{repository}/archive/refs/tags/{reference}.tar.gz",
@@ -73,7 +106,23 @@ def _find_source(work_directory: Path) -> Path:
     raise RuntimeError("El paquete de FlowMobile no es válido.")
 
 
-def _install_python_dependencies() -> None:
+def _verify_source_manifest(source: Path) -> None:
+    manifest = source / "SECURITY_MANIFEST.sha256"
+    if not manifest.is_file():
+        raise RuntimeError("El release no contiene el manifiesto de seguridad.")
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        parts = line.split(maxsplit=1)
+        if len(parts) != 2 or not re.fullmatch(r"[0-9a-fA-F]{64}", parts[0]):
+            raise RuntimeError("El manifiesto de seguridad no es válido.")
+        relative = parts[1].lstrip("*")
+        target = (source / relative).resolve()
+        if os.path.commonpath((str(source.resolve()), str(target))) != str(source.resolve()):
+            raise RuntimeError("El manifiesto contiene una ruta no segura.")
+        if not target.is_file() or _sha256(target) != parts[0].lower():
+            raise RuntimeError(f"Falló la integridad del archivo: {relative}")
+
+
+def _install_python_dependencies(app_directory: Path) -> None:
     try:
         from pip._internal.cli.main import main as pip_main
     except ImportError as exc:
@@ -83,10 +132,12 @@ def _install_python_dependencies() -> None:
         [
             "install",
             "--disable-pip-version-check",
+            "--require-hashes",
+            "--only-binary=:all:",
             "--no-deps",
             "--upgrade",
-            "yt-dlp",
-            "yt-dlp-ejs",
+            "-r",
+            str(app_directory / "requirements.lock"),
         ]
     )
     if status:
@@ -288,6 +339,7 @@ def install(
         _download_source_archive(repository, branch, archive)
         _safe_extract(archive, work_directory)
         source = _find_source(work_directory)
+        _verify_source_manifest(source)
         if not _valid_installation(source):
             raise RuntimeError("La versión descargada no superó la validación previa.")
 
@@ -317,7 +369,7 @@ def install(
             launcher = bin_directory / "flow.py"
             shutil.copy2(app_directory / "scripts" / "flow_ios.py", launcher)
             _configure_profile(documents, app_directory)
-            _install_python_dependencies()
+            _install_python_dependencies(app_directory)
             if not _valid_installation(app_directory):
                 raise RuntimeError("La instalación nueva quedó incompleta.")
             if not _valid_launcher_configuration(documents, app_directory):

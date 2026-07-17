@@ -119,7 +119,8 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
             print(f"{CYAN}Actualizando yt-dlp y EJS…{RESET}")
             result = update_ytdlp()
             if result.ok:
-                print(f"{GREEN}✓ yt-dlp actualizado.{RESET}")
+                message = "yt-dlp actualizado" if result.changed else "dependencias verificadas"
+                print(f"{GREEN}✓ {message}.{RESET}")
             else:
                 print(f"{RED}✗ No se pudo actualizar yt-dlp: {result.detail}{RESET}")
 

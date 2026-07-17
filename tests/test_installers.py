@@ -21,9 +21,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InstallerCompatibilityTests(unittest.TestCase):
-    def test_ios_bootstrap_falls_back_to_main_without_release(self):
+    def test_ios_bootstrap_refuses_unpublished_source(self):
         with patch("bootstrap_ios.urlopen", side_effect=OSError("offline")):
-            self.assertEqual(latest_stable_reference("owner/repository"), "main")
+            self.assertEqual(latest_stable_reference("owner/repository"), "")
 
     def test_bootstrap_and_launcher_do_not_require_grep(self):
         for relative in ("install.sh", "scripts/flow"):
@@ -33,7 +33,7 @@ class InstallerCompatibilityTests(unittest.TestCase):
     def test_ios_installer_explains_python_requirement(self):
         content = (ROOT / "install-ios.sh").read_text(encoding="utf-8")
         self.assertIn("a-Shell completa", content)
-        self.assertIn("python3 python", content)
+        self.assertIn("Python", content)
 
     def test_ashell_uses_a_python_installer_instead_of_dash(self):
         content = (ROOT / "install_ios.py").read_text(encoding="utf-8")
@@ -46,8 +46,9 @@ class InstallerCompatibilityTests(unittest.TestCase):
 
     def test_termux_installer_supports_stable_tags(self):
         installer = (ROOT / "install-termux.sh").read_text(encoding="utf-8")
-        self.assertIn("archive/refs/heads/$BRANCH", installer)
-        self.assertIn("archive/refs/tags/$BRANCH", installer)
+        self.assertIn("releases/download/$BRANCH", installer)
+        self.assertIn("SHA256SUMS", installer)
+        self.assertIn("FLOWMOBILE_ALLOW_UNVERIFIED", installer)
 
     def test_termux_installer_requires_public_android_downloads(self):
         installer = (ROOT / "install-termux.sh").read_text(encoding="utf-8")
@@ -197,12 +198,13 @@ class InstallerCompatibilityTests(unittest.TestCase):
             with patch("install_ios._download_source_archive"):
                 with patch("install_ios._safe_extract"):
                     with patch("install_ios._find_source", side_effect=fake_source):
-                        with patch(
-                            "install_ios._install_python_dependencies",
-                            side_effect=RuntimeError("pip failed"),
-                        ):
-                            with self.assertRaises(RuntimeError):
-                                install("owner/repository", home=root)
+                        with patch("install_ios._verify_source_manifest"):
+                            with patch(
+                                "install_ios._install_python_dependencies",
+                                side_effect=RuntimeError("pip failed"),
+                            ):
+                                with self.assertRaises(RuntimeError):
+                                    install("owner/repository", home=root)
 
             self.assertEqual((app / "main.py").read_text(encoding="utf-8"), "old-version")
             self.assertTrue((app / "Downloads" / "keep.mp4").is_file())

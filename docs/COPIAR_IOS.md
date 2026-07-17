@@ -4,7 +4,7 @@ Abre **a-Shell completa**. Pulsa el icono de copiar situado en la esquina del
 bloque y pega el comando en la terminal:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/bootstrap_ios.py | python3 - tacosandtypescript-debug/FlowMobile
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/bootstrap_ios.py | python3 - tacosandtypescript-debug/FlowMobile
 ```
 
 Si la aplicación de GitHub no muestra el icono, mantén pulsada la línea y elige

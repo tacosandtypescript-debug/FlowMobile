@@ -83,7 +83,16 @@ class PublicReleaseTests(unittest.TestCase):
         self.assertIn("document.execCommand('copy')", site)
         self.assertIn("bootstrap_ios.py | python3 -", site)
         self.assertIn("install.sh | sh -s --", site)
-        self.assertIn("actions/deploy-pages@v4", workflow)
+        self.assertIn("actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e", workflow)
+
+    def test_actions_are_pinned_and_release_is_attested(self):
+        workflows = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (ROOT / ".github" / "workflows").glob("*.yml")
+        )
+        self.assertNotRegex(workflows, r"uses:\s+actions/[^@\s]+@v\d")
+        self.assertIn("actions/attest@", workflows)
+        self.assertIn("attestations: write", workflows)
 
     def test_readme_stays_short_and_links_to_detailed_guide(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

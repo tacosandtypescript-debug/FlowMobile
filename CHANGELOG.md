@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.6.18 — 2026-07-17
+
+- Instalaciones y actualizaciones estables verificadas con SHA-256 antes de ejecutarse.
+- Manifiesto de integridad para detectar código modificado, rutas inseguras y archivos ejecutables no registrados.
+- Centro de seguridad visible con origen oficial, integridad del código y privacidad de cookies.
+- Dependencias Python bloqueadas por versión y hash; acciones de GitHub fijadas a commits inmutables.
+- Releases con atestación de procedencia y activos de instalación verificables para a-Shell y Termux.
+
 ## 7.6.17 — 2026-07-17
 
 - Portada reducida y enfocada en instalar FlowMobile desde el móvil.

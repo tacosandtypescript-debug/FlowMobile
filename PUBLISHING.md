@@ -45,7 +45,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript-debug@users.noreply.github.com"
 git add .
 git status
-git commit -m "Simplificar portada de FlowMobile 7.6.17"
+git commit -m "Reforzar seguridad de FlowMobile 7.6.18"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -81,8 +81,8 @@ primero la prueba completa en Termux y después repítela en a-Shell.
 Cuando `main` esté verde y la matriz de `docs/DEVICE_TESTING.md` esté completa:
 
 ```powershell
-git tag -a v7.6.17 -m "FlowMobile 7.6.17"
-git push origin v7.6.17
+git tag -a v7.6.18 -m "FlowMobile 7.6.18"
+git push origin v7.6.18
 ```
 
 La acción `Release` comprueba que la etiqueta coincida con `VERSION`, ejecuta
@@ -95,7 +95,7 @@ no tenga ningún Release.
 En a-Shell se usa el instalador Python nativo para evitar `dash`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/bootstrap_ios.py | python3 - tacosandtypescript-debug/FlowMobile
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/bootstrap_ios.py | python3 - tacosandtypescript-debug/FlowMobile
 ```
 
 Al terminar, abre una ventana nueva de a-Shell y ejecuta `flow`. El menú no debe
@@ -104,7 +104,7 @@ abrirse desde el proceso conectado a `curl`, porque esa entrada no es interactiv
 En Termux se usa el instalador de shell:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
 
 En Termux puede ser necesario instalar primero `curl`:

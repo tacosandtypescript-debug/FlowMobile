@@ -9,6 +9,7 @@ from flow.infrastructure.device import open_share, open_url
 from flow.infrastructure.diagnostics import save_diagnostic_report
 from flow.infrastructure.feedback import ISSUES_URL, SECURITY_REPORT_URL, feedback_url
 from flow.infrastructure.sessions import import_cookies, remove_cookies, session_status
+from flow.infrastructure.security import harden_private_files, security_status
 from flow.infrastructure.settings import save_settings
 from flow.infrastructure.uninstall import uninstall
 from flow.presentation.theme import *
@@ -107,6 +108,34 @@ def show_diagnostics_menu(cli: Any) -> None:
             cli.show_real_tests()
 
 
+def show_security(cli: Any) -> None:
+    cli.logo("CENTRO DE SEGURIDAD")
+    harden_private_files()
+    status = security_status()
+    source = (
+        f"{GREEN}✓ Repositorio oficial{RESET}"
+        if status.official_source
+        else f"{YELLOW}⚠ Origen no oficial configurado{RESET}"
+    )
+    integrity = (
+        f"{GREEN}✓ {status.integrity_detail}{RESET}"
+        if status.integrity_ok
+        else f"{RED}✕ {status.integrity_detail}{RESET}"
+    )
+    if status.cookies_private is None:
+        cookies = f"{GRAY}• Cookies privadas no configuradas{RESET}"
+    elif status.cookies_private:
+        cookies = f"{GREEN}✓ Cookies protegidas (solo usuario){RESET}"
+    else:
+        cookies = f"{YELLOW}⚠ Revisa los permisos de cookies{RESET}"
+    print(f"{source}\n{integrity}\n{cookies}")
+    print(
+        f"\n{GRAY}Versión {status.version}. Las actualizaciones estables se "
+        f"comprueban con SHA-256 antes de ejecutarse.{RESET}"
+    )
+    cli.pause()
+
+
 def show_tools(cli: Any) -> None:
     while True:
         with cli.buffered_screen():
@@ -115,27 +144,29 @@ def show_tools(cli: Any) -> None:
             cli.menu_item("1", "Sugerencias y reportes", "buzón público y seguridad privada")
             cli.menu_item("2", "Plataformas compatibles", "35 sitios reconocidos")
             cli.section("PRIVACIDAD Y PREFERENCIAS")
-            cli.menu_item("3", "Cookies y sesiones")
-            cli.menu_item("4", "Ajustes")
+            cli.menu_item("3", "Centro de seguridad", "origen, integridad y privacidad")
+            cli.menu_item("4", "Cookies y sesiones")
+            cli.menu_item("5", "Ajustes")
             cli.section("MANTENIMIENTO")
-            cli.menu_item("5", "Sistema y reparación", "estado, dependencias y temporales")
-            cli.menu_item("6", "Diagnóstico y pruebas", "informe privado y pruebas reales")
-            cli.menu_item("7", "Desinstalar FlowMobile")
+            cli.menu_item("6", "Sistema y reparación", "estado, dependencias y temporales")
+            cli.menu_item("7", "Diagnóstico y pruebas", "informe privado y pruebas reales")
+            cli.menu_item("8", "Desinstalar FlowMobile")
             cli.menu_item("0", "Volver")
         choice = cli.prompt_choice(
             "Selecciona",
-            {"0", "1", "2", "3", "4", "5", "6", "7"},
+            {"0", "1", "2", "3", "4", "5", "6", "7", "8"},
         )
         if choice == "0":
             return
         actions = {
             "1": lambda: show_feedback(cli),
             "2": lambda: show_supported_platforms(cli),
-            "3": cli.show_sessions,
-            "4": cli.show_settings,
-            "5": cli.show_system_repair,
-            "6": lambda: show_diagnostics_menu(cli),
-            "7": cli.show_uninstall,
+            "3": lambda: show_security(cli),
+            "4": cli.show_sessions,
+            "5": cli.show_settings,
+            "6": cli.show_system_repair,
+            "7": lambda: show_diagnostics_menu(cli),
+            "8": cli.show_uninstall,
         }
         actions[choice]()
 

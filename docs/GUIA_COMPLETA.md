@@ -14,14 +14,14 @@ Para instalar rápidamente, vuelve a la [portada](../README.md).
 En a-Shell:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/bootstrap_ios.py | python3 - tacosandtypescript-debug/FlowMobile
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/bootstrap_ios.py | python3 - tacosandtypescript-debug/FlowMobile
 ```
 
 En Termux:
 
 ```sh
 pkg install -y curl
-curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile/main/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
 
 El instalador prepara Python, yt-dlp, EJS y FFmpeg cuando el dispositivo lo
