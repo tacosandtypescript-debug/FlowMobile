@@ -20,13 +20,39 @@ curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/lates
 En Termux:
 
 ```sh
-pkg install -y curl
+umask 077; pkg install -y curl > "$HOME/.flowmobile-install.log" 2>&1 || { echo "No se pudo preparar curl:"; tail -n 1 "$HOME/.flowmobile-install.log"; exit 1; }
 curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install.sh | sh -s -- tacosandtypescript-debug/FlowMobile
 ```
 
 El instalador prepara Python, yt-dlp, EJS y FFmpeg cuando el dispositivo lo
 permite. En Android también solicita acceso al almacenamiento. Al finalizar,
 abre una ventana nueva y ejecuta `flow`.
+
+### Progreso y solución de errores
+
+La instalación muestra únicamente seis etapas. La salida completa se guarda
+con permisos privados en `~/.flowmobile-install.log` y se reemplaza en cada
+intento. Si algo falla, FlowMobile indica la etapa, un código identificable,
+el error original y la acción recomendada.
+
+Para consultar el registro:
+
+```sh
+cat ~/.flowmobile-install.log
+```
+
+Para mostrar también la salida técnica durante una prueba:
+
+```sh
+# a-Shell
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/bootstrap_ios.py | FLOWMOBILE_VERBOSE=1 python3 - tacosandtypescript-debug/FlowMobile
+
+# Termux
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install.sh | FLOWMOBILE_VERBOSE=1 sh -s -- tacosandtypescript-debug/FlowMobile
+```
+
+No desactives una comprobación SHA-256. Los errores `INTEGRITY` indican que el
+archivo no coincide con el release oficial y la instalación debe detenerse.
 
 ## Descargas y galería
 

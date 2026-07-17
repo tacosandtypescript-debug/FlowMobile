@@ -119,7 +119,7 @@ class InstallerCompatibilityTests(unittest.TestCase):
 
     def test_ios_installer_explains_activation_in_current_window(self):
         content = (ROOT / "install_ios.py").read_text(encoding="utf-8")
-        self.assertIn("flow ya está activo en esta misma ventana", content)
+        self.assertIn("Abre ahora con: flow", content)
         self.assertIn("cd && . ./.profile && flow", content)
 
     def test_current_ashell_session_receives_flow_alias(self):

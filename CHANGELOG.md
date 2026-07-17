@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.6.19 — 2026-07-17
+
+- Instalación silenciosa en seis etapas para a-Shell y Termux, sin bloques técnicos innecesarios.
+- Registro privado reemplazable con la salida completa de pkg, pip, curl y Python.
+- Errores con código, causa exacta, detalle original y solución específica para cada etapa.
+- Un reintento automático ante fallos temporales de red y tiempos límite para evitar bloqueos.
+- Modo `FLOWMOBILE_VERBOSE=1`, rollback conservado y resumen final con comando y carpetas.
+
 ## 7.6.18 — 2026-07-17
 
 - Instalaciones y actualizaciones estables verificadas con SHA-256 antes de ejecutarse.
