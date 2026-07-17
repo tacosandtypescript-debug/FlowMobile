@@ -27,6 +27,7 @@ try {
         "docs/DEVICE_TESTING.md",
         "docs/COPIAR_IOS.md",
         "docs/COPIAR_ANDROID.md",
+        "docs/GUIA_COMPLETA.md",
         "site/index.html",
         "main.py",
         "requirements.txt",

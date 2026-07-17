@@ -45,7 +45,7 @@ git config user.name "tacosandtypescript-debug"
 git config user.email "tacosandtypescript-debug@users.noreply.github.com"
 git add .
 git status
-git commit -m "Añadir copia directa móvil en FlowMobile 7.6.16"
+git commit -m "Simplificar portada de FlowMobile 7.6.17"
 git remote add origin https://github.com/tacosandtypescript-debug/FlowMobile.git
 git push -u origin main
 ```
@@ -71,7 +71,7 @@ En a-Shell:
 python3 scripts/check_device.py
 ```
 
-El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 123
+El diagnóstico comprueba Python, yt-dlp, FFmpeg, FFprobe, la plataforma y las 124
 pruebas automatizadas. Después abre `flow` y comprueba una descarga de audio,
 una de vídeo, compartir, la calidad final y la sección de actualizaciones. Haz
 primero la prueba completa en Termux y después repítela en a-Shell.
@@ -81,8 +81,8 @@ primero la prueba completa en Termux y después repítela en a-Shell.
 Cuando `main` esté verde y la matriz de `docs/DEVICE_TESTING.md` esté completa:
 
 ```powershell
-git tag -a v7.6.16 -m "FlowMobile 7.6.16"
-git push origin v7.6.16
+git tag -a v7.6.17 -m "FlowMobile 7.6.17"
+git push origin v7.6.17
 ```
 
 La acción `Release` comprueba que la etiqueta coincida con `VERSION`, ejecuta

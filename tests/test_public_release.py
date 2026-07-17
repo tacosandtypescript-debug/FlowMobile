@@ -85,6 +85,13 @@ class PublicReleaseTests(unittest.TestCase):
         self.assertIn("install.sh | sh -s --", site)
         self.assertIn("actions/deploy-pages@v4", workflow)
 
+    def test_readme_stays_short_and_links_to_detailed_guide(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertLessEqual(len(readme.splitlines()), 75)
+        self.assertIn("docs/GUIA_COMPLETA.md", readme)
+        self.assertIn("github.io/FlowMobile/?device=apple", readme)
+        self.assertIn("github.io/FlowMobile/?device=android", readme)
+
 
 if __name__ == "__main__":
     unittest.main()

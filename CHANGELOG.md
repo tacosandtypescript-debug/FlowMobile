@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 7.6.17 — 2026-07-17
+
+- Portada reducida y enfocada en instalar FlowMobile desde el móvil.
+- Botones de Apple y Android colocados antes de la información secundaria.
+- Instalación explicada en tres pasos breves y ubicaciones mostradas en una tabla.
+- Detalles técnicos, privacidad y mantenimiento trasladados a una guía completa.
+- Prueba automática para impedir que el README vuelva a crecer excesivamente.
+
 ## 7.6.16 — 2026-07-17
 
 - Botones móviles iguales a los de SpaceFlow mediante una página de copia directa.
