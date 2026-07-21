@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import os
-
 from flow import APP_VERSION
 from flow.infrastructure.paths import BASE_DIR
+from flow.infrastructure.privacy import private_path_is_protected, protect_private_path
 from flow.infrastructure.sessions import COOKIES_FILE
 from flow.infrastructure.updates import DEFAULT_REPOSITORY, configured_repository
 from scripts.security_manifest import verify_manifest
@@ -23,10 +22,7 @@ def security_status() -> SecurityStatus:
     errors = verify_manifest(BASE_DIR)
     cookie_private: bool | None = None
     if COOKIES_FILE.is_file():
-        try:
-            cookie_private = not bool(COOKIES_FILE.stat().st_mode & 0o077)
-        except OSError:
-            cookie_private = False
+        cookie_private = private_path_is_protected(COOKIES_FILE)
     return SecurityStatus(
         official_source=configured_repository() == DEFAULT_REPOSITORY,
         integrity_ok=not errors,
@@ -37,7 +33,4 @@ def security_status() -> SecurityStatus:
 
 def harden_private_files() -> None:
     if COOKIES_FILE.is_file():
-        try:
-            os.chmod(COOKIES_FILE, 0o600)
-        except OSError:
-            pass
+        protect_private_path(COOKIES_FILE)

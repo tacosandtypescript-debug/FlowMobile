@@ -9,6 +9,7 @@ import re
 
 from flow.domain.models import DownloadChoice
 from flow.infrastructure.paths import AUDIO_BATCH_DIR, BATCH_DIR, QUEUE_DIR, VIDEO_BATCH_DIR
+from flow.infrastructure.privacy import protect_private_path
 
 
 @dataclass(slots=True)
@@ -80,10 +81,9 @@ def save_queue(queue: DownloadQueue) -> None:
         "items": [asdict(item) for item in queue.items],
     }
     temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    try:
-        temporary.chmod(0o600)
-    except OSError:
-        pass
+    if not protect_private_path(temporary):
+        temporary.unlink(missing_ok=True)
+        raise OSError("No se pudo proteger la cola privada.")
     os.replace(temporary, target)
 
 

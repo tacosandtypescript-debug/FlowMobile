@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 8.0.4 — 2026-07-21
+
+- Avisos de nueva versión persistentes y separados de la caché de comprobación.
+- yt-dlp solo se ofrece cuando la versión está verificada en `requirements.lock`.
+- ACL privadas en Windows para cookies, ajustes, historial, colas e informes.
+- Pruebas semanales de instalación real en Windows y Linux.
+- Formulario de errores actualizado para iOS, Android, Windows y Linux.
+
 ## 8.0.3 — 2026-07-17
 
 - El enlace Linux activa `~/.local/bin` directamente en la terminal actual.

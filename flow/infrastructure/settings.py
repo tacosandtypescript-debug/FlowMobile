@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from flow.infrastructure.paths import LEGACY_SETTINGS_FILE, SETTINGS_FILE
+from flow.infrastructure.privacy import protect_private_path
 
 
 @dataclass(slots=True)
@@ -21,6 +22,7 @@ class AppSettings:
     last_update_ok: bool | None = None
     last_flow_version: str | None = None
     last_flow_release_notes: tuple[str, ...] = ()
+    last_announced_flow_version: str | None = None
 
     def normalize(self) -> "AppSettings":
         if self.default_kind not in {"ask", "video", "audio"}:
@@ -47,6 +49,11 @@ class AppSettings:
                 for note in self.last_flow_release_notes[:5]
                 if str(note).strip()
             )
+        if (
+            not isinstance(self.last_announced_flow_version, str)
+            or not self.last_announced_flow_version.strip()
+        ):
+            self.last_announced_flow_version = None
         return self
 
 def load_settings() -> AppSettings:
@@ -69,6 +76,7 @@ def load_settings() -> AppSettings:
             last_update_ok=data.get("last_update_ok"),
             last_flow_version=data.get("last_flow_version"),
             last_flow_release_notes=data.get("last_flow_release_notes", ()),
+            last_announced_flow_version=data.get("last_announced_flow_version"),
         ).normalize()
     except (OSError, UnicodeError, json.JSONDecodeError):
         return AppSettings()
@@ -81,4 +89,7 @@ def save_settings(settings: AppSettings) -> None:
         json.dumps(asdict(settings), ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    if not protect_private_path(temp):
+        temp.unlink(missing_ok=True)
+        raise OSError("No se pudieron proteger los ajustes privados.")
     os.replace(temp, SETTINGS_FILE)

@@ -2,12 +2,36 @@ import unittest
 import threading
 from io import StringIO
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from flow.presentation.cli import FlowCLI
+from flow.infrastructure.settings import AppSettings
+from flow.presentation.update_menu import record_update_check
 
 
 class InteractiveMenuTests(unittest.TestCase):
+    def test_pypi_version_is_not_offered_until_lockfile_verifies_it(self):
+        cli = SimpleNamespace(
+            flow_update_version=None,
+            flow_release_notes=(),
+            settings=AppSettings(),
+            _tools_status=None,
+        )
+        check = SimpleNamespace(
+            flow_latest="8.0.4",
+            flow_ref="v8.0.4",
+            release_notes=(),
+            ytdlp_latest="9999.1.1",
+            ytdlp_locked="2026.7.4",
+            repository="owner/repository",
+            ffmpeg_pending=False,
+            error="",
+        )
+        with patch("flow.presentation.update_menu.tools_status", return_value=(True, True)):
+            with patch("flow.presentation.update_menu.save_settings"):
+                _, ytdlp_pending, _, _ = record_update_check(cli, check)
+        self.assertFalse(ytdlp_pending)
+
     def test_runtime_state_is_initialized(self):
         with patch("flow.presentation.cli.MediaService"):
             settings = SimpleNamespace(
@@ -86,20 +110,23 @@ class InteractiveMenuTests(unittest.TestCase):
             auto_updates=True,
             last_update_check=None,
             last_update_ok=None,
+            last_announced_flow_version=None,
         )
         cli.update_check_running = False
         cli._update_lock = threading.Lock()
         cli.flow_update_version = None
         cli.flow_release_notes = ()
         check = SimpleNamespace(
-            flow_latest="7.4.1",
+            flow_latest="99.0.0",
             ytdlp_latest="9999.1.1",
+            ytdlp_locked="2026.7.4",
             repository="owner/repository",
             release_notes=(),
             ffmpeg_pending=False,
             error="",
         )
 
+        cli.announce_background_update = Mock()
         with patch("flow.presentation.update_menu.check_available_updates", return_value=check):
             with patch("flow.presentation.update_menu.tools_status", return_value=(True, True)):
                 with patch("flow.presentation.update_menu.save_settings"):
@@ -111,6 +138,20 @@ class InteractiveMenuTests(unittest.TestCase):
 
         self.assertTrue(thread.call_args.kwargs["daemon"])
         self.assertFalse(cli.update_check_running)
+        cli.announce_background_update.assert_called_once_with("99.0.0")
+        self.assertEqual(cli.settings.last_announced_flow_version, "99.0.0")
+
+    def test_cached_update_is_announced_if_notice_was_never_shown(self):
+        settings = SimpleNamespace(
+            last_flow_version="99.0.0",
+            last_flow_release_notes=("Cambio",),
+            last_announced_flow_version=None,
+        )
+        with patch("flow.presentation.cli.MediaService"):
+            with patch("flow.presentation.cli.load_settings", return_value=settings):
+                cli = FlowCLI()
+        self.assertEqual(cli.flow_update_version, "99.0.0")
+        self.assertIsNone(cli._announced_update_version)
 
     def test_closed_input_exits_without_traceback(self):
         cli = FlowCLI.__new__(FlowCLI)

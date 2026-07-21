@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable
 
 from flow.infrastructure.paths import STATE_DIR
+from flow.infrastructure.privacy import protect_private_path
 
 
 RESUME_FILE = STATE_DIR / "resume.json"
@@ -39,8 +40,7 @@ def _save(paths: Iterable[Path]) -> None:
         temporary.unlink(missing_ok=True)
         return
     temporary.write_text(json.dumps(values, ensure_ascii=False, indent=2), encoding="utf-8")
-    try:
-        temporary.chmod(0o600)
-    except OSError:
-        pass
+    if not protect_private_path(temporary):
+        temporary.unlink(missing_ok=True)
+        raise OSError("No se pudo proteger el estado de reanudación.")
     os.replace(temporary, RESUME_FILE)

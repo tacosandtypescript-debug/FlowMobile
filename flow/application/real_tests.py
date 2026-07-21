@@ -8,6 +8,7 @@ from pathlib import Path
 from flow.domain.models import DownloadChoice
 from flow.infrastructure.ffmpeg import MediaProbe, probe_media
 from flow.infrastructure.paths import STATE_DIR
+from flow.infrastructure.privacy import protect_private_path
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,9 +117,11 @@ def save_report(rows: list[dict[str, object]]) -> Path:
         json.dumps({"created": datetime.now().isoformat(), "results": rows}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    if not protect_private_path(target):
+        target.unlink(missing_ok=True)
+        raise OSError("No se pudo proteger el informe de pruebas reales.")
     return target
 
 
 def verification_dict(verification: Verification) -> dict[str, object]:
     return asdict(verification)
-

@@ -31,7 +31,8 @@ def record_update_check(cli: Any, check: Any) -> tuple[bool, bool, bool, bool]:
     if check.flow_latest is not None:
         cli.settings.last_flow_version = check.flow_latest
         cli.settings.last_flow_release_notes = check.release_notes
-    ytdlp_pending = is_newer(check.ytdlp_latest, yt_dlp.version.__version__)
+    locked_ytdlp = getattr(check, "ytdlp_locked", None)
+    ytdlp_pending = is_newer(locked_ytdlp, yt_dlp.version.__version__)
     ffmpeg_available, ffprobe_available = tools_status()
     cli._tools_status = (ffmpeg_available, ffprobe_available)
     cli.settings.last_update_check = datetime.now().isoformat(timespec="seconds")
@@ -46,6 +47,8 @@ def record_update_check(cli: Any, check: Any) -> tuple[bool, bool, bool, bool]:
         and not ytdlp_pending
         and not check.ffmpeg_pending
     )
+    if check.flow_latest is not None and not flow_pending:
+        cli.settings.last_announced_flow_version = None
     try:
         save_settings(cli.settings)
     except OSError:
@@ -86,11 +89,16 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
         print(f"{YELLOW}! No se pudo verificar la versión de yt-dlp.{RESET}")
     elif ytdlp_pending:
         print(
-            f"{YELLOW}! yt-dlp {check.ytdlp_latest} disponible "
+            f"{YELLOW}! yt-dlp {check.ytdlp_locked} disponible "
             f"(actual {yt_dlp.version.__version__}).{RESET}"
         )
     else:
         print(f"{GREEN}✓ yt-dlp {yt_dlp.version.__version__}{RESET}")
+        if is_newer(check.ytdlp_latest, check.ytdlp_locked or yt_dlp.version.__version__):
+            print(
+                f"{GRAY}yt-dlp {check.ytdlp_latest} llegará con la próxima "
+                f"versión verificada de FlowMobile.{RESET}"
+            )
     print(
         f"{GREEN if ffmpeg_available else YELLOW}"
         f"{'✓' if ffmpeg_available else '!'} FFmpeg "
@@ -111,7 +119,7 @@ def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> N
         print()
         selected = cli.prompt_choice("¿Quieres actualizar ahora? [1] Sí  [2] No", {"1", "2"})
         if selected == "2":
-            print(f"{GRAY}La actualización se volverá a ofrecer al abrir FlowMobile.{RESET}")
+            print(f"{GRAY}La actualización seguirá visible en el menú principal.{RESET}")
             cli.pause()
             return
 
@@ -165,14 +173,19 @@ def start_background_update_check(cli: Any) -> None:
         try:
             with cli._update_lock:
                 if cli.settings.auto_updates:
-                    previous_version = cli.flow_update_version
                     check = check_available_updates(include_package_manager=False)
                     cli.record_update_check(check)
                     if (
                         cli.flow_update_version
-                        and cli.flow_update_version != previous_version
+                        and cli.flow_update_version
+                        != getattr(cli.settings, "last_announced_flow_version", None)
                     ):
                         cli.announce_background_update(cli.flow_update_version)
+                        cli.settings.last_announced_flow_version = cli.flow_update_version
+                        try:
+                            save_settings(cli.settings)
+                        except OSError:
+                            pass
                 else:
                     cli._tools_status = tools_status()
         finally:

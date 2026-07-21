@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -7,6 +9,7 @@ from flow.infrastructure.platform import PlatformInfo
 from flow.infrastructure.updates import (
     check_available_updates,
     is_newer,
+    locked_dependency_version,
     release_notes_for_version,
     release_notes_from_body,
     update_ytdlp,
@@ -15,6 +18,16 @@ from flow.infrastructure.updates import (
 
 
 class UpdateTests(unittest.TestCase):
+    def test_locked_ytdlp_version_is_the_only_installable_candidate(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "requirements.lock").write_text(
+                "yt-dlp==2026.7.4 --hash=sha256:abc\n",
+                encoding="utf-8",
+            )
+            with patch("flow.infrastructure.updates.BASE_DIR", root):
+                self.assertEqual(locked_dependency_version("yt-dlp"), "2026.7.4")
+
     def test_desktop_updates_use_the_platform_specific_verified_asset(self):
         cases = (
             (PlatformInfo("windows", "Terminal", "Windows"), "install-windows.ps1"),
@@ -106,6 +119,7 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(result.flow_latest, "8.0.0")
         self.assertEqual(result.flow_ref, "v8.0.0")
         self.assertEqual(result.release_notes, ("Estable",))
+        self.assertIsNotNone(result.ytdlp_locked)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import Any
 from .paths import HISTORY_FILE, LEGACY_HISTORY_FILE
+from .privacy import protect_private_path
 
 
 class HistoryError(RuntimeError):
@@ -51,6 +52,8 @@ def save_history(entry: dict[str, Any]) -> None:
             json.dumps(history[:50], ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+        if not protect_private_path(temp):
+            raise OSError("no se pudieron aplicar permisos privados")
         os.replace(temp, HISTORY_FILE)
     except OSError as exc:
         temp.unlink(missing_ok=True)

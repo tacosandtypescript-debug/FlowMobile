@@ -2,6 +2,10 @@
 
 Esta matriz debe completarse antes de crear una etiqueta estable.
 
+La acción semanal **Prueba real de instaladores** comprueba instalaciones
+limpias en Windows y Linux. No sustituye las pruebas de descarga y compartir
+en dispositivos físicos, porque los servicios pueden bloquear centros de datos.
+
 ## Preparación
 
 - Probar en una instalación limpia de a-Shell en iOS.
@@ -11,6 +15,7 @@ Esta matriz debe completarse antes de crear una etiqueta estable.
 - Ejecutar `python3 scripts/check_device.py` en a-Shell.
 - Ejecutar `sh scripts/check-device.sh` en Termux.
 - Confirmar que todas las pruebas automatizadas terminan correctamente.
+- Confirmar que la última ejecución semanal de instaladores está en verde.
 
 ## Matriz obligatoria
 

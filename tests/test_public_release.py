@@ -32,6 +32,14 @@ class PublicReleaseTests(unittest.TestCase):
         ):
             self.assertTrue((ROOT / name).is_file(), name)
 
+    def test_bug_form_covers_every_supported_operating_system(self):
+        form = (ROOT / ".github" / "ISSUE_TEMPLATE" / "bug_report.yml").read_text(
+            encoding="utf-8"
+        )
+        for platform in ("iOS", "Android", "Windows", "Linux"):
+            self.assertIn(platform, form)
+        self.assertIn("flow --version", form)
+
     def test_current_license_is_polyform_strict(self):
         license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
         self.assertTrue(license_text.startswith("# PolyForm Strict License 1.0.0"))
@@ -95,7 +103,7 @@ class PublicReleaseTests(unittest.TestCase):
         self.assertIn("document.execCommand('copy')", site)
         self.assertIn("bootstrap_ios.py | python3 -", site)
         self.assertIn("install.sh | sh -s --", site)
-        self.assertIn("actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e", workflow)
+        self.assertIn("actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128", workflow)
 
     def test_actions_are_pinned_and_release_is_attested(self):
         workflows = "\n".join(
@@ -105,6 +113,16 @@ class PublicReleaseTests(unittest.TestCase):
         self.assertNotRegex(workflows, r"uses:\s+actions/[^@\s]+@v\d")
         self.assertIn("actions/attest@", workflows)
         self.assertIn("attestations: write", workflows)
+
+    def test_real_installer_smoke_tests_cover_windows_and_linux(self):
+        workflow = (ROOT / ".github" / "workflows" / "smoke-installers.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("schedule:", workflow)
+        self.assertIn("runs-on: ubuntu-latest", workflow)
+        self.assertIn("runs-on: windows-latest", workflow)
+        self.assertIn("--health-check", workflow)
+        self.assertIn("--version", workflow)
 
     def test_readme_stays_short_and_links_to_detailed_guide(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

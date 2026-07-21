@@ -6,6 +6,7 @@ import os
 import shutil
 
 from flow.infrastructure.paths import SESSION_DIR
+from flow.infrastructure.privacy import protect_private_path
 
 
 COOKIES_FILE = SESSION_DIR / "cookies.txt"
@@ -46,7 +47,8 @@ def import_cookies(source: Path) -> SessionStatus:
     temporary = COOKIES_FILE.with_suffix(".tmp")
     try:
         shutil.copyfile(source, temporary)
-        os.chmod(temporary, 0o600)
+        if not protect_private_path(temporary):
+            raise OSError("no se pudieron aplicar permisos privados")
         os.replace(temporary, COOKIES_FILE)
     except OSError as exc:
         temporary.unlink(missing_ok=True)

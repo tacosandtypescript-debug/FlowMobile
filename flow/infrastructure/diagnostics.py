@@ -11,6 +11,7 @@ from flow import APP_NAME, APP_VERSION
 from flow.infrastructure.ffmpeg import tools_status
 from flow.infrastructure.paths import STATE_DIR, VIDEO_DIR
 from flow.infrastructure.platform import PLATFORM
+from flow.infrastructure.privacy import protect_private_path
 from flow.infrastructure.security import security_status
 
 
@@ -63,4 +64,7 @@ def save_diagnostic_report(directory: Path | None = None) -> Path:
         json.dumps(diagnostic_data(), ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    if not protect_private_path(target):
+        target.unlink(missing_ok=True)
+        raise OSError("No se pudo proteger el informe de diagnóstico.")
     return target
