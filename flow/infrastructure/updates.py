@@ -29,6 +29,7 @@ class UpdateResult:
 class UpdateCheck:
     flow_latest: str | None = None
     ytdlp_latest: str | None = None
+    ytdlp_locked: str | None = None
     repository: str | None = None
     flow_ref: str | None = None
     release_notes: tuple[str, ...] = ()
@@ -45,6 +46,17 @@ def _version_parts(value: str) -> tuple[int, ...]:
 
 def is_newer(candidate: str | None, current: str) -> bool:
     return bool(candidate) and _version_parts(candidate or "") > _version_parts(current)
+
+
+def locked_dependency_version(distribution: str) -> str | None:
+    lockfile = BASE_DIR / "requirements.lock"
+    try:
+        content = lockfile.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return None
+    pattern = rf"(?mi)^{re.escape(distribution)}==([^\s\\]+)"
+    match = re.search(pattern, content)
+    return match.group(1) if match else None
 
 
 def release_notes_for_version(changelog: str, target_version: str) -> tuple[str, ...]:
@@ -135,6 +147,7 @@ def check_available_updates(include_package_manager: bool = True) -> UpdateCheck
     repository = configured_repository()
     check = UpdateCheck(repository=repository)
     errors: list[str] = []
+    check.ytdlp_locked = locked_dependency_version("yt-dlp")
     try:
         data = json.loads(_read_url("https://pypi.org/pypi/yt-dlp/json"))
         check.ytdlp_latest = str(data.get("info", {}).get("version") or "") or None

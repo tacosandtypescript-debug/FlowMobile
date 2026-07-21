@@ -7,7 +7,7 @@ body:
     id: version
     attributes:
       label: Versión de FlowMobile
-      placeholder: 7.6.0
+      placeholder: "Ejecuta: flow --version"
     validations:
       required: true
   - type: dropdown
@@ -17,6 +17,9 @@ body:
       options:
         - iOS / a-Shell
         - Android / Termux
+        - Windows 10/11
+        - Linux / Bash
+        - Linux / Zsh
     validations:
       required: true
   - type: textarea

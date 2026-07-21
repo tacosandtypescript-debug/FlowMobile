@@ -1,0 +1,43 @@
+name: Prueba real de instaladores
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Instalación real · Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Instalar desde el release estable
+        shell: bash
+        env:
+          FLOWMOBILE_HOME: ${{ runner.temp }}/flowmobile-linux
+          FLOWMOBILE_DOWNLOADS: ${{ runner.temp }}/downloads
+          FLOWMOBILE_INSTALL_LOG: ${{ runner.temp }}/flowmobile-linux.log
+          FLOWMOBILE_BIN: ${{ runner.temp }}/bin
+        run: |
+          bash install-linux.sh tacosandtypescript-debug/FlowMobile
+          "${FLOWMOBILE_BIN}/flow" --health-check
+          "${FLOWMOBILE_BIN}/flow" --version
+
+  windows:
+    name: Instalación real · Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Instalar desde el release estable
+        shell: powershell
+        run: |
+          $env:FLOWMOBILE_HOME = Join-Path $env:RUNNER_TEMP "flowmobile-windows"
+          $env:FLOWMOBILE_DOWNLOADS = Join-Path $env:RUNNER_TEMP "downloads"
+          $env:FLOWMOBILE_INSTALL_LOG = Join-Path $env:RUNNER_TEMP "flowmobile-windows.log"
+          .\install-windows.ps1 -Repository tacosandtypescript-debug/FlowMobile -Auto
+          $launcher = Join-Path $env:LOCALAPPDATA "FlowMobileBin\flow.cmd"
+          & $launcher --health-check
+          & $launcher --version

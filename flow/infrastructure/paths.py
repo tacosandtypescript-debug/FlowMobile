@@ -6,6 +6,7 @@ from flow.infrastructure.platform import (
     termux_shared_directory,
     termux_shared_downloads,
 )
+from flow.infrastructure.privacy import protect_private_path
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 STATE_DIR = BASE_DIR / ".flowmobile"
@@ -65,7 +66,4 @@ QUEUE_DIR.mkdir(parents=True, exist_ok=True)
 for media_directory in (VIDEO_DIR, AUDIO_DIR, BATCH_DIR, VIDEO_BATCH_DIR, AUDIO_BATCH_DIR):
     media_directory.mkdir(parents=True, exist_ok=True)
 for private_directory in (STATE_DIR, SESSION_DIR, QUEUE_DIR):
-    try:
-        private_directory.chmod(0o700)
-    except OSError:
-        pass
+    protect_private_path(private_directory, directory=True)

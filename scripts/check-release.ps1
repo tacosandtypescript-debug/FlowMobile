@@ -24,6 +24,7 @@ try {
         ".github/workflows/ci.yml",
         ".github/workflows/release.yml",
         ".github/workflows/pages.yml",
+        ".github/workflows/smoke-installers.yml",
         ".github/dependabot.yml",
         "docs/DEVICE_TESTING.md",
         "docs/COPIAR_IOS.md",

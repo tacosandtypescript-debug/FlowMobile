@@ -82,7 +82,9 @@ class FlowCLI:
         self._tools_status: tuple[bool, bool] | None = None
         self._last_accessible_progress = -10
         self._menu_ready = threading.Event()
-        self._announced_update_version: str | None = self.flow_update_version
+        self._announced_update_version: str | None = getattr(
+            self.settings, "last_announced_flow_version", None
+        )
 
     def announce_background_update(self, version: str) -> None:
         """Avisa incluso si la consulta termina mientras input espera una opción."""

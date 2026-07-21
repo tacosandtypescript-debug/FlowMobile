@@ -23,6 +23,10 @@ class SettingsTests(unittest.TestCase):
         self.assertIsNone(settings.last_flow_version)
         self.assertEqual(settings.last_flow_release_notes, ())
 
+    def test_invalid_announced_version_is_safely_cleared(self):
+        settings = AppSettings(last_announced_flow_version=8).normalize()  # type: ignore[arg-type]
+        self.assertIsNone(settings.last_announced_flow_version)
+
     def test_invalid_interface_preferences_use_private_safe_defaults(self):
         settings = AppSettings(
             clipboard_detection="no",  # type: ignore[arg-type]

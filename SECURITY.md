@@ -13,11 +13,14 @@ Solo la versión estable más reciente recibe correcciones de seguridad.
 - Las dependencias Python se instalan desde `requirements.lock` con hashes.
 - Las cookies se guardan localmente con permisos privados y nunca se incluyen
   en el diagnóstico.
+- Windows aplica ACL del usuario actual a cookies, ajustes, historial, colas e
+  informes; los sistemas POSIX usan permisos `600` y directorios `700`.
 - El registro de instalación se reemplaza en cada intento, usa permisos
   privados y no contiene cookies ni historial de descargas.
 - Los paquetes publicados incluyen una atestación de procedencia de GitHub.
 - Dependabot revisa semanalmente Python y GitHub Actions; CodeQL analiza el
   código y la rama principal exige verificaciones antes de integrar cambios.
+- Una prueba semanal instala el release estable desde cero en Windows y Linux.
 
 El Centro de seguridad está en **Herramientas → Centro de seguridad**. Si la
 integridad falla, no introduzcas cookies ni ejecutes actualizaciones: reinstala
