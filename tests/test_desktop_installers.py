@@ -140,6 +140,15 @@ class DesktopInstallerTests(unittest.TestCase):
         self.assertIn("security_manifest.py", installer)
         self.assertIn("FM-LINUX-INTEGRITY", installer)
 
+    def test_linux_activates_flow_in_current_and_future_shells(self):
+        installer = (ROOT / "install-linux.sh").read_text(encoding="utf-8")
+        guide = (ROOT / "docs" / "COPIAR_LINUX.md").read_text(encoding="utf-8")
+        site = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('$HOME/.bashrc', installer)
+        self.assertIn('$HOME/.zshrc', installer)
+        self.assertIn('export PATH="$HOME/.local/bin:$PATH" && hash -r', guide)
+        self.assertIn('export PATH="$HOME/.local/bin:$PATH" &amp;&amp; hash -r', site)
+
     def test_release_publishes_both_desktop_installers(self):
         workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
         self.assertIn("install-windows.ps1", workflow)
@@ -152,7 +161,8 @@ class DesktopInstallerTests(unittest.TestCase):
                 with redirect_stdout(output), self.assertRaises(SystemExit) as stopped:
                     runpy.run_path(str(ROOT / "main.py"), run_name="__main__")
         self.assertEqual(stopped.exception.code, 0)
-        self.assertIn("FlowMobile 8.0.0: OK", output.getvalue())
+        version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+        self.assertIn(f"FlowMobile {version}: OK", output.getvalue())
 
     def test_health_check_rejects_missing_ffmpeg(self):
         error = StringIO()

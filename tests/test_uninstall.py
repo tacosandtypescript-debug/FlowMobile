@@ -115,11 +115,16 @@ class UninstallTests(unittest.TestCase):
                 "before\n# >>> FlowMobile desktop >>>\nexport PATH=x\n# <<< FlowMobile desktop <<<\nafter\n",
                 encoding="utf-8",
             )
+            (root / ".bashrc").write_text(
+                "bash\n# >>> FlowMobile desktop >>>\nexport PATH=x\n# <<< FlowMobile desktop <<<\n",
+                encoding="utf-8",
+            )
             platform = PlatformInfo("linux", "Terminal", "Linux")
             result = uninstall(False, app, downloads, platform, root)
             self.assertTrue(result.ok, result.errors)
             self.assertFalse(launcher.exists())
             self.assertNotIn("FlowMobile desktop", (root / ".profile").read_text(encoding="utf-8"))
+            self.assertNotIn("FlowMobile desktop", (root / ".bashrc").read_text(encoding="utf-8"))
             self.assertTrue((downloads / "video.mp4").exists())
 
 
