@@ -1,5 +1,25 @@
 # Historial de versiones
 
+## 8.0.3 — 2026-07-17
+
+- El enlace Linux activa `~/.local/bin` directamente en la terminal actual.
+- Ya no depende de que Pop!_OS, Ubuntu u otra distribución recargue `.profile`.
+- Se limpia la caché de comandos del shell antes de que el usuario ejecute `flow`.
+
+## 8.0.2 — 2026-07-17
+
+- El instalador Linux activa `flow` en la terminal actual desde el comando público.
+- El PATH queda registrado también en Bash o Zsh para las siguientes terminales.
+- La desinstalación limpia de forma segura los bloques añadidos a todos los perfiles.
+- Mensaje de activación más visible cuando la terminal todavía conserva el PATH anterior.
+
+## 8.0.1 — 2026-07-17
+
+- Nueva identidad visual con portada e icono originales para FlowMobile.
+- Portada del repositorio más clara, con insignia de la última versión estable.
+- Página de instalación con marca visual, favicon y vista previa al compartir enlaces.
+- Mensajes posteriores a copiar adaptados correctamente a cada plataforma.
+
 ## 8.0.0 — 2026-07-17
 
 - Soporte nativo para ejecutar FlowMobile desde Windows Terminal y terminales Linux.

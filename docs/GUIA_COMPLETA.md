@@ -35,7 +35,7 @@ irm https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/downl
 En Linux:
 
 ```sh
-curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-linux.sh | sh -s -- tacosandtypescript-debug/FlowMobile
+curl -fsSL https://github.com/tacosandtypescript-debug/FlowMobile/releases/latest/download/install-linux.sh | sh -s -- tacosandtypescript-debug/FlowMobile && export PATH="$HOME/.local/bin:$PATH" && hash -r
 ```
 
 El instalador prepara Python, yt-dlp, EJS y FFmpeg cuando el dispositivo lo
