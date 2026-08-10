@@ -39,7 +39,7 @@ jobs:
           (cd release && sha256sum FlowMobile-* bootstrap_ios.py install_ios.py install.sh install-termux.sh install-linux.sh install-windows.ps1 > SHA256SUMS)
           python scripts/release_notes.py "$VERSION" > release/RELEASE_NOTES.md
       - name: Atestar procedencia de los paquetes
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: |
             release/FlowMobile-*.tar.gz
