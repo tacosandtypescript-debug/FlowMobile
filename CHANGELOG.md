@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 8.0.5 — 2026-08-10
+
+- Mejorada la explicación cuando TikTok rechaza la respuesta de su página.
+- Añadidas indicaciones para cookies de sesión y cambio de red.
+- Conservadas las descargas y ajustes al actualizar desde a-Shell.
+
 ## 8.0.4 — 2026-07-21
 
 - Avisos de nueva versión persistentes y separados de la caché de comprobación.
