@@ -56,6 +56,15 @@ class FriendlyErrorTests(unittest.TestCase):
         self.assertIn("TikTok", title)
         self.assertIn("minutos", hint)
 
+    def test_tiktok_webpage_challenge_has_actionable_guidance(self):
+        title, hint = friendly_error(
+            "https://vt.tiktok.com/ZS47GE6Uq/",
+            RuntimeError("Unexpected response from webpage request"),
+        )
+        self.assertIn("rechazó", title)
+        self.assertIn("cookies", hint)
+        self.assertIn("Wi-Fi", hint)
+
     def test_private_content_has_actionable_hint(self):
         title, hint = friendly_error(
             "https://www.instagram.com/reel/1",

@@ -22,6 +22,20 @@ def friendly_error(url: str, error: Exception) -> tuple[str, str]:
             "Si continúa, cambia entre Wi-Fi y datos móviles; las cookies no eliminan "
             "un bloqueo directo de IP.",
         )
+    if platform == "TikTok" and any(
+        term in value
+        for term in (
+            "unexpected response from webpage request",
+            "solve challenge",
+            "challenge",
+        )
+    ):
+        return (
+            "TikTok rechazó la solicitud de esta red o sesión.",
+            "Abre el enlace en Safari y comprueba que el video se reproduzca. "
+            "Después importa las cookies de TikTok en Herramientas › Sesión, "
+            "o cambia entre Wi-Fi y datos móviles antes de reintentar.",
+        )
     if any(term in value for term in ("sign in", "login", "cookie", "cookies")):
         return (
             f"{platform} solicita iniciar sesión.",
