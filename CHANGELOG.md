@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 8.0.6 — 2026-08-12
+
+- TikTok reintenta automáticamente con la API móvil cuando falla la extracción web.
+- Se prueban dos hosts de API y se conservan las cookies configuradas por el usuario.
+- Se mantiene el mensaje de diagnóstico cuando TikTok bloquea ambas rutas.
+
 ## 8.0.5 — 2026-08-10
 
 - Mejorada la explicación cuando TikTok rechaza la respuesta de su página.

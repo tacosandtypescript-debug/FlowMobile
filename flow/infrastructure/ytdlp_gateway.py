@@ -2,6 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 import time
+from urllib.parse import urlparse
 import yt_dlp
 
 from flow.domain.cancellation import DownloadCancelled
@@ -51,12 +52,57 @@ def common_options(progress_hook: Callable[[dict[str, Any]], None]) -> dict[str,
     return options
 
 
+_TIKTOK_API_HOSTS = (
+    "api16-normal-c-useast1a.tiktokv.com",
+    "api22-normal-c-useast2a.tiktokv.com",
+)
+_TIKTOK_DEVICE_ID = "7379690547022071302"
+
+
+def _is_tiktok_url(url: str) -> bool:
+    hostname = (urlparse(url).hostname or "").casefold()
+    return hostname == "tiktok.com" or hostname.endswith(".tiktok.com")
+
+
+def _tiktok_fallback_options(options: dict[str, Any], host: str) -> dict[str, Any]:
+    fallback = dict(options)
+    fallback["extractor_args"] = {
+        "tiktok": {
+            "device_id": _TIKTOK_DEVICE_ID,
+            "api_hostname": host,
+        }
+    }
+    return fallback
+
+
+def _extract_info_with_fallback(
+    url: str,
+    options: dict[str, Any],
+    *,
+    download: bool,
+) -> dict[str, Any]:
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            return ydl.extract_info(url, download=download)
+    except Exception as first_error:
+        if not _is_tiktok_url(url):
+            raise
+        last_error: Exception = first_error
+        for host in _TIKTOK_API_HOSTS:
+            try:
+                fallback = _tiktok_fallback_options(options, host)
+                with yt_dlp.YoutubeDL(fallback) as ydl:
+                    return ydl.extract_info(url, download=download)
+            except Exception as error:
+                last_error = error
+        raise last_error from first_error
+
+
 def inspect(url: str) -> dict[str, Any]:
     options = common_options(lambda _: None)
     options.update({"skip_download": True, "progress_hooks": []})
 
-    with yt_dlp.YoutubeDL(options) as ydl:
-        info = ydl.extract_info(url, download=False)
+    info = _extract_info_with_fallback(url, options, download=False)
 
     entries = info.get("entries")
     if isinstance(entries, list):
@@ -250,8 +296,7 @@ def download(
 
     target_dir.mkdir(parents=True, exist_ok=True)
     try:
-        with yt_dlp.YoutubeDL(options) as ydl:
-            info = ydl.extract_info(url, download=True)
+        info = _extract_info_with_fallback(url, options, download=True)
     except (DownloadCancelled, KeyboardInterrupt) as error:
         partials: list[Path] = []
         for path in target_dir.rglob("*.part"):
