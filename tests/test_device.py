@@ -56,11 +56,29 @@ class DeviceIntegrationTests(unittest.TestCase):
 
     def test_ashell_share_uses_open(self):
         completed = SimpleNamespace(returncode=0)
-        platform = SimpleNamespace(is_termux=False)
+        platform = SimpleNamespace(is_termux=False, is_windows=False, is_linux=False)
         with patch.object(device, "PLATFORM", platform):
-            with patch.object(device.subprocess, "run", return_value=completed) as run:
-                self.assertTrue(device.open_share(Path("/tmp/video.mp4")))
+            with patch.object(device, "_ashell_run", return_value=False):
+                with patch.object(device.subprocess, "run", return_value=completed) as run:
+                    self.assertTrue(device.open_share(Path("/tmp/video.mp4")))
         self.assertEqual(run.call_args.args[0], ["open", "/tmp/video.mp4"])
+
+    def test_ashell_share_prefers_ios_system(self):
+        platform = SimpleNamespace(is_termux=False, is_windows=False, is_linux=False)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device, "_ashell_run", return_value=True) as run:
+                with patch.object(device, "_run") as fallback:
+                    self.assertTrue(device.open_share(Path("/tmp/clip video.mp4")))
+        self.assertTrue(run.call_args.args[0].startswith("open "))
+        self.assertIn("clip video.mp4", run.call_args.args[0])
+        fallback.assert_not_called()
+
+    def test_ashell_play_uses_play_command(self):
+        platform = SimpleNamespace(is_termux=False, is_windows=False, is_linux=False)
+        with patch.object(device, "PLATFORM", platform):
+            with patch.object(device, "_ashell_run", return_value=True) as run:
+                self.assertTrue(device.play_media(Path("/tmp/audio.m4a")))
+        self.assertTrue(run.call_args.args[0].startswith("play "))
 
     def test_ashell_opens_feedback_in_browser(self):
         completed = SimpleNamespace(returncode=0)

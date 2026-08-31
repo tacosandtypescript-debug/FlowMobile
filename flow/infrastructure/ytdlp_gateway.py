@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
+import random
 import time
 from urllib.parse import urlparse
 import yt_dlp
@@ -54,9 +55,14 @@ def common_options(progress_hook: Callable[[dict[str, Any]], None]) -> dict[str,
 
 _TIKTOK_API_HOSTS = (
     "api16-normal-c-useast1a.tiktokv.com",
+    "api19-normal-c-useast1a.tiktokv.com",
     "api22-normal-c-useast2a.tiktokv.com",
+    "api16-normal-c-useast2a.tiktokv.com",
 )
-_TIKTOK_DEVICE_ID = "7379690547022071302"
+_IPHONE_UA = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+)
 
 
 def _is_tiktok_url(url: str) -> bool:
@@ -64,15 +70,38 @@ def _is_tiktok_url(url: str) -> bool:
     return hostname == "tiktok.com" or hostname.endswith(".tiktok.com")
 
 
-def _tiktok_fallback_options(options: dict[str, Any], host: str) -> dict[str, Any]:
+def _tiktok_device_id() -> str:
+    return str(random.randint(10**18, 10**19 - 1))
+
+
+def _with_tiktok_args(
+    options: dict[str, Any],
+    *,
+    host: str | None = None,
+    device_id: str | None = None,
+) -> dict[str, Any]:
     fallback = dict(options)
-    fallback["extractor_args"] = {
-        "tiktok": {
-            "device_id": _TIKTOK_DEVICE_ID,
-            "api_hostname": host,
-        }
-    }
+    headers = dict(fallback.get("http_headers") or {})
+    headers["User-Agent"] = _IPHONE_UA
+    fallback["http_headers"] = headers
+    tiktok: dict[str, Any] = {}
+    if host:
+        tiktok["api_hostname"] = host
+    if device_id:
+        tiktok["device_id"] = device_id
+    if tiktok:
+        extractor_args = dict(fallback.get("extractor_args") or {})
+        extractor_args["tiktok"] = tiktok
+        fallback["extractor_args"] = extractor_args
     return fallback
+
+
+def _tiktok_fallback_options(base: dict[str, Any]) -> Iterator[dict[str, Any]]:
+    """Rutas alternativas: API móvil en varios hosts y un device_id fresco."""
+    yield _with_tiktok_args(base)
+    for host in _TIKTOK_API_HOSTS:
+        yield _with_tiktok_args(base, host=host)
+        yield _with_tiktok_args(base, host=host, device_id=_tiktok_device_id())
 
 
 def _extract_info_with_fallback(
@@ -88,9 +117,8 @@ def _extract_info_with_fallback(
         if not _is_tiktok_url(url):
             raise
         last_error: Exception = first_error
-        for host in _TIKTOK_API_HOSTS:
+        for fallback in _tiktok_fallback_options(options):
             try:
-                fallback = _tiktok_fallback_options(options, host)
                 with yt_dlp.YoutubeDL(fallback) as ydl:
                     return ydl.extract_info(url, download=download)
             except Exception as error:
@@ -143,26 +171,69 @@ def playlist_urls(url: str) -> list[str]:
     return list(dict.fromkeys(urls))
 
 
+def _format_is_downloadable(fmt: dict[str, Any]) -> bool:
+    if fmt.get("has_drm") is True:
+        return False
+    protocol = str(fmt.get("protocol") or "")
+    if protocol in {"mhtml", "mhtml+https", "storyboard"}:
+        return False
+    vcodec = fmt.get("vcodec")
+    if vcodec in (None, "none", "images"):
+        return False
+    if fmt.get("url"):
+        return True
+    fragments = fmt.get("fragments")
+    return isinstance(fragments, list) and bool(fragments)
+
+
+def _short_side(fmt: dict[str, Any]) -> int | None:
+    width = fmt.get("width")
+    height = fmt.get("height")
+    if isinstance(width, int) and width > 0 and isinstance(height, int) and height > 0:
+        return min(width, height)
+    if isinstance(height, int) and height > 0:
+        return height
+    if isinstance(width, int) and width > 0:
+        return width
+    resolution = fmt.get("resolution")
+    if isinstance(resolution, str) and "x" in resolution.casefold():
+        parts = resolution.lower().replace("×", "x").split("x", 1)
+        try:
+            values = [int(part.strip()) for part in parts]
+        except ValueError:
+            return None
+        if len(values) == 2 and min(values) > 0:
+            return min(values)
+    return None
+
+
 def available_resolutions(info: dict[str, Any]) -> list[int]:
+    """Solo calidades de formatos descargables; no inventa 360/720/1080."""
     values: set[int] = set()
     for fmt in info.get("formats") or []:
-        if not isinstance(fmt, dict):
+        if not isinstance(fmt, dict) or not _format_is_downloadable(fmt):
             continue
-        height = fmt.get("height")
-        width = fmt.get("width")
-        vcodec = fmt.get("vcodec")
-        protocol = fmt.get("protocol")
-        if (
-            vcodec in (None, "none", "images")
-            or protocol == "mhtml"
-            or fmt.get("has_drm") is True
-        ):
-            continue
-        if isinstance(width, int) and width > 0 and isinstance(height, int) and height > 0:
-            values.add(min(width, height))
-        elif isinstance(height, int) and height > 0:
-            values.add(height)
+        short = _short_side(fmt)
+        if short is not None:
+            values.add(short)
     return sorted(values, reverse=True)
+
+
+def video_format_selector(height: int | None) -> str:
+    """Limita de verdad al lado corto pedido; no usa solo format_sort."""
+    if height is None:
+        return "bestvideo*+bestaudio/best"
+    h = int(height)
+    return (
+        f"bestvideo*[width={h}][height>={h}]+bestaudio/"
+        f"bestvideo*[height={h}][width>={h}]+bestaudio/"
+        f"best[width={h}]/"
+        f"best[height={h}]/"
+        f"bestvideo*[width<={h}]+bestaudio/"
+        f"bestvideo*[height<={h}]+bestaudio/"
+        f"best[width<={h}]/"
+        f"best[height<={h}]"
+    )
 
 
 def estimate_size(
@@ -284,15 +355,11 @@ def download(
         })
     else:
         target_dir = video_dir
-        selector = "bestvideo*+bestaudio/best"
         options.update({
-            "format": selector,
+            "format": video_format_selector(height),
             "outtmpl": str(target_dir / "%(title).120B [%(id)s].%(ext)s"),
             "merge_output_format": "mkv",
         })
-        if height is not None:
-            # `res` usa la dimensión menor y funciona también con video vertical.
-            options["format_sort"] = [f"res:{height}"]
 
     target_dir.mkdir(parents=True, exist_ok=True)
     try:

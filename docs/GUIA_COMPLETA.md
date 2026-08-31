@@ -70,7 +70,10 @@ archivo no coincide con el release oficial y la instalación debe detenerse.
 
 ## Descargas y galería
 
-- a-Shell guarda los archivos dentro de `FlowMobile/Downloads`.
+- a-Shell guarda los archivos dentro de `FlowMobile/Downloads` (vídeos y
+  audios en subcarpetas). En el iPhone aparecen en **Archivos › a-Shell ›
+  FlowMobile › Downloads**. Compartir abre la hoja de iOS para Guardar en
+  Fotos, AirDrop o Mensajes.
 - Android guarda los vídeos en `Movies/FlowMobile` y los audios en
   `Music/FlowMobile`.
 - Android registra los archivos terminados en el catálogo multimedia para que

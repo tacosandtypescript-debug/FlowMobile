@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 8.0.7 — 2026-08-31
+
+- Compartir y reproducir en iPhone/iPad usan `ios_system` de a-Shell, no un proceso Unix aislado.
+- Tras cada descarga se indica la ruta en Archivos › a-Shell › FlowMobile.
+- Si la hoja de iOS no abre, se muestran pasos para Compartir y Guardar en Fotos.
+- TikTok reintenta en más hosts de API móvil con un device_id nuevo, no uno quemado.
+- El menú de calidades solo lista formatos con URL real; no inventa 360p/720p/1080p.
+- La descarga limita de verdad al lado corto elegido, no solo reordena formatos.
+
 ## 8.0.6 — 2026-08-12
 
 - TikTok reintenta automáticamente con la API móvil cuando falla la extracción web.

@@ -436,6 +436,11 @@ class FlowCLI:
             print(f"{GRAY}Archivo: {path.name}{RESET}")
             if PLATFORM.is_termux:
                 print(f"{CYAN}Dónde encontrarlo: {android_location}{RESET}")
+            elif PLATFORM.is_ashell:
+                folder = path.parent.name
+                print(
+                    f"{CYAN}Dónde encontrarlo: Archivos › a-Shell › FlowMobile › Downloads › {folder}{RESET}"
+                )
             else:
                 print(f"{CYAN}Ubicación: {path.parent}{RESET}")
             print(f"{MAGENTA}{BOLD}SIGUIENTE ACCIÓN{RESET}")
@@ -456,6 +461,15 @@ class FlowCLI:
                     if PLATFORM.is_termux:
                         print(f"{YELLOW}Alternativa manual:{RESET}")
                         print(f"{GRAY}Abre Archivos › {android_location}, mantén pulsado el archivo y toca Compartir.{RESET}")
+                    elif PLATFORM.is_ashell:
+                        print(f"{YELLOW}Alternativa manual:{RESET}")
+                        print(
+                            f"{GRAY}Abre Archivos › a-Shell › FlowMobile › Downloads, "
+                            "mantén pulsado el archivo y toca Compartir.{RESET}"
+                        )
+                        print(
+                            f"{GRAY}Desde esa hoja puedes Guardar vídeo en Fotos o enviarlo.{RESET}"
+                        )
                 else:
                     message = "Ubicación abierta." if getattr(PLATFORM, "is_desktop", False) else f"Archivo enviado a la vista de {PLATFORM.mobile_os}."
                     print(f"{GREEN}{message}{RESET}")
