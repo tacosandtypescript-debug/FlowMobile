@@ -82,10 +82,11 @@ class DeviceIntegrationTests(unittest.TestCase):
 
     def test_ashell_opens_feedback_in_browser(self):
         completed = SimpleNamespace(returncode=0)
-        platform = SimpleNamespace(is_termux=False)
+        platform = SimpleNamespace(is_termux=False, is_windows=False, is_linux=False)
         with patch.object(device, "PLATFORM", platform):
-            with patch.object(device.subprocess, "run", return_value=completed) as run:
-                self.assertTrue(device.open_url("https://github.com/example/issues/new"))
+            with patch.object(device, "_ashell_run", return_value=False):
+                with patch.object(device.subprocess, "run", return_value=completed) as run:
+                    self.assertTrue(device.open_url("https://github.com/example/issues/new"))
         self.assertEqual(
             run.call_args.args[0],
             ["open", "https://github.com/example/issues/new"],

@@ -81,6 +81,17 @@ class QualityDetectionTests(unittest.TestCase):
         }
         self.assertEqual(available_resolutions(info), [360])
 
+    def test_hls_manifest_is_treated_as_downloadable(self):
+        info = {
+            "formats": [
+                {
+                    "width": 1280, "height": 720, "vcodec": "h264",
+                    "protocol": "m3u8_native", "manifest_url": "https://cdn/720.m3u8",
+                },
+            ]
+        }
+        self.assertEqual(available_resolutions(info), [720])
+
     def test_video_selector_caps_requested_height(self):
         selector = video_format_selector(720)
         self.assertIn("width=720", selector)

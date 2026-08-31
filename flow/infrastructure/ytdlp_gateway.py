@@ -97,10 +97,9 @@ def _with_tiktok_args(
 
 
 def _tiktok_fallback_options(base: dict[str, Any]) -> Iterator[dict[str, Any]]:
-    """Rutas alternativas: API móvil en varios hosts y un device_id fresco."""
+    """UA de iPhone y un intento por host de API con device_id fresco."""
     yield _with_tiktok_args(base)
     for host in _TIKTOK_API_HOSTS:
-        yield _with_tiktok_args(base, host=host)
         yield _with_tiktok_args(base, host=host, device_id=_tiktok_device_id())
 
 
@@ -180,7 +179,7 @@ def _format_is_downloadable(fmt: dict[str, Any]) -> bool:
     vcodec = fmt.get("vcodec")
     if vcodec in (None, "none", "images"):
         return False
-    if fmt.get("url"):
+    if fmt.get("url") or fmt.get("manifest_url"):
         return True
     fragments = fmt.get("fragments")
     return isinstance(fragments, list) and bool(fragments)
