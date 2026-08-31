@@ -8,8 +8,6 @@ import threading
 from pathlib import Path
 from typing import Any
 
-import yt_dlp
-
 from flow import APP_NAME, APP_VERSION
 from flow.application.media_service import MediaService
 from flow.application.real_tests import (
@@ -95,7 +93,7 @@ class FlowCLI:
         output = sys.__stdout__ or sys.stdout
         output.write(
             f"\n\a{YELLOW}{BOLD}! FlowMobile {version} disponible.{RESET}\n"
-            f"{CYAN}Selecciona [5] Actualizaciones para instalarla.{RESET}\n"
+            f"{CYAN}[5] Actualizar{RESET}\n"
         )
         output.flush()
 
@@ -127,32 +125,26 @@ class FlowCLI:
         sys.stdout.write(buffer.getvalue())
         sys.stdout.flush()
 
-    def line(self, width: int = 38) -> str:
+    def line(self, width: int = 32) -> str:
         return "─" * width
 
     def logo(self, title: str) -> None:
         self.clear()
         current_tools = self._tools_status
-        tools_ok = bool(current_tools and all(current_tools))
         if current_tools is None:
-            status_color, status_label = CYAN, "VERIFICANDO SISTEMA"
-        elif tools_ok:
-            status_color, status_label = GREEN, "SISTEMA LISTO"
+            status = f"{CYAN}…{RESET}"
+        elif all(current_tools):
+            status = f"{GREEN}✓{RESET}"
         else:
-            status_color, status_label = YELLOW, "REVISAR HERRAMIENTAS"
-        print(f"{MAGENTA}{BOLD}{APP_NAME}{RESET}")
-        print(f"{GRAY}{PLATFORM.mobile_os} · {PLATFORM.name} · v{APP_VERSION}{RESET}")
-        print(f"{CYAN}{self.line()}{RESET}")
+            status = f"{YELLOW}!{RESET}"
         print(
-            f"{status_color}● {status_label}{RESET}  "
-            f"{GRAY}yt-dlp{RESET} {CYAN}{yt_dlp.version.__version__}{RESET}"
+            f"{MAGENTA}{BOLD}{APP_NAME}{RESET} {GRAY}{APP_VERSION}{RESET} "
+            f"{status} {GRAY}{PLATFORM.mobile_os}{RESET}"
         )
-        print()
         print(f"{WHITE}{BOLD}{title}{RESET}")
-        print(f"{CYAN}{self.line()}{RESET}")
 
     def pause(self) -> None:
-        self.read_input(f"\n{GRAY}Presiona Enter para continuar...{RESET}")
+        self.read_input(f"{GRAY}Enter…{RESET} ")
 
     def read_input(self, prompt: str) -> str:
         try:
@@ -165,12 +157,11 @@ class FlowCLI:
             raise SystemExit(0) from None
 
     def menu_item(self, number: str, title: str, detail: str = "") -> None:
-        print(f"{CYAN}{BOLD}[{number}]{RESET} {WHITE}{BOLD}{title}{RESET}")
-        if detail:
-            print(f"    {GRAY}{detail}{RESET}")
+        suffix = f"  {GRAY}{detail}{RESET}" if detail else ""
+        print(f"{CYAN}[{number}]{RESET} {title}{suffix}")
 
     def section(self, title: str) -> None:
-        print(f"\n{MAGENTA}{BOLD}{title}{RESET}")
+        print(f"{GRAY}{title}{RESET}")
 
     def prompt_choice(self, prompt: str, valid: set[str]) -> str:
         normalized = {value.lower() for value in valid}
@@ -227,52 +218,38 @@ class FlowCLI:
         current_tools = self._tools_status
         tools_ok = bool(current_tools and all(current_tools))
         if current_tools is None:
-            tools_label, tools_color = "○ Verificando herramientas", CYAN
+            tools_label, tools_color = "○ sistema", CYAN
         elif tools_ok:
-            tools_label, tools_color = "✓ Herramientas listas", GREEN
+            tools_label, tools_color = "✓ sistema", GREEN
         else:
-            tools_label, tools_color = "! Revisar herramientas", YELLOW
+            tools_label, tools_color = "! sistema", YELLOW
         if not self.settings.auto_updates:
-            update_label, update_color = "○ Actualización manual", GRAY
+            update_label, update_color = "○ manual", GRAY
         elif self.update_check_running:
-            update_label, update_color = "○ Revisando en segundo plano", CYAN
+            update_label, update_color = "○ buscando", CYAN
         elif self.settings.last_update_ok is True:
-            update_label, update_color = "✓ Todo actualizado", GREEN
+            update_label, update_color = "✓ al día", GREEN
         elif self.settings.last_update_ok is False:
-            update_label, update_color = "! Revisión necesaria", YELLOW
+            update_label, update_color = "! actualizar", YELLOW
         else:
-            update_label, update_color = "○ Aún sin comprobar", GRAY
+            update_label, update_color = "○ sin comprobar", GRAY
 
-        last_title = "Ninguna descarga todavía"
+        last_title = ""
         try:
             history = load_history()
             if history:
-                last_title = str(history[0].get("title") or "Sin título")[:26]
+                last_title = str(history[0].get("title") or "Sin título")[:28]
         except HistoryError:
-            last_title = "Historial no disponible"
+            last_title = ""
 
-        if self.settings.interface_mode == "accessible":
-            print(f"Videos: {videos} · {format_bytes(video_size)}")
-            print(f"Audios: {audios} · {format_bytes(audio_size)}")
-            print(f"Espacio libre: {format_bytes(free)}")
-            print(tools_label)
-            print(update_label)
-            print(f"Última descarga: {last_title}")
-            return
-
-        def row(text: str, color: str = WHITE) -> None:
-            print(f"{MAGENTA}│{RESET} {color}{text[:34]:<34}{RESET} {MAGENTA}│{RESET}")
-
-        print(f"{MAGENTA}╭{self.line(36)}╮{RESET}")
-        row("PANEL DE FLOWMOBILE", WHITE + BOLD)
-        print(f"{MAGENTA}├{self.line(36)}┤{RESET}")
-        row(f"▸ Videos  {videos:>3}  {format_bytes(video_size):>10}", CYAN)
-        row(f"▸ Audios  {audios:>3}  {format_bytes(audio_size):>10}", GREEN)
-        row(f"▸ Libre         {format_bytes(free):>10}", WHITE)
-        row(tools_label, tools_color)
-        row(update_label, update_color)
-        row(f"Última: {last_title}", GRAY)
-        print(f"{MAGENTA}╰{self.line(36)}╯{RESET}")
+        print(
+            f"{GRAY}{videos}v {format_bytes(video_size)} · "
+            f"{audios}a {format_bytes(audio_size)} · "
+            f"{format_bytes(free)} libre{RESET}"
+        )
+        print(f"{tools_color}{tools_label}{RESET}  {update_color}{update_label}{RESET}")
+        if last_title:
+            print(f"{GRAY}{last_title}{RESET}")
 
     def draw_progress(self, percent: float, speed: str, eta: str) -> None:
         if self.settings.interface_mode == "accessible":
@@ -357,10 +334,8 @@ class FlowCLI:
                     else f"Video · hasta {height}p"
                 )
             print()
-            print(f"{MAGENTA}{BOLD}PREFERENCIA GUARDADA{RESET}")
-            print(f"{GREEN}[1]{RESET} Usar {description}")
-            print(f"{CYAN}[2]{RESET} Elegir manualmente")
-            print(f"{RED}[0]{RESET} Cancelar")
+            print(f"{GRAY}Preferencia:{RESET} {description}")
+            print(f"{GREEN}[1]{RESET} Usar  {CYAN}[2]{RESET} Elegir  {RED}[0]{RESET} Cancelar")
             selected = self.prompt_choice("Selecciona", {"0", "1", "2"})
             if selected == "0":
                 return None
@@ -373,45 +348,40 @@ class FlowCLI:
             displayed = resolutions if show_all else self.featured_resolutions(resolutions)
 
             print()
-            print(f"{MAGENTA}{BOLD}FORMATO Y CALIDAD{RESET}")
-            print(f"{CYAN}{self.line()}{RESET}")
+            print(f"{GRAY}Calidad{RESET}")
 
             audio = DownloadChoice("audio", None, self.settings.audio_format)
             audio_size = self.service.estimated_size(media, audio)
             audio_label = {
-                "auto": "M4A/MP3 automático",
+                "auto": "M4A/MP3",
                 "m4a": "M4A",
                 "mp3": "MP3",
             }[self.settings.audio_format]
-            print(
-                f"{GREEN}{BOLD}[1] Solo audio{RESET} — {audio_label} "
-                f"{GRAY}({format_bytes(audio_size) if audio_size else 'tamaño desconocido'}){RESET}"
-            )
+            size_text = format_bytes(audio_size) if audio_size else "—"
+            print(f"{GREEN}[1]{RESET} Audio {audio_label}  {GRAY}{size_text}{RESET}")
             actions["1"] = audio
-            print(f"{GRAY}    Extrae el sonido y elimina el video.{RESET}")
-            print()
 
             option = 2
             if displayed:
                 for index, height in enumerate(displayed):
                     choice = DownloadChoice("video", height)
                     size = self.service.estimated_size(media, choice)
-                    badge = f" {GREEN}★ mejor detectada{RESET}" if index == 0 else ""
+                    badge = f" {GREEN}★{RESET}" if index == 0 else ""
+                    size_text = format_bytes(size) if size else "—"
                     print(
-                        f"{CYAN}[{option}]{RESET} Video — {height}p{badge} "
-                        f"{GRAY}({format_bytes(size) if size else 'tamaño desconocido'}){RESET}"
+                        f"{CYAN}[{option}]{RESET} {height}p{badge}  {GRAY}{size_text}{RESET}"
                     )
                     actions[str(option)] = choice
                     option += 1
             else:
-                print(f"{YELLOW}No se detectaron resoluciones exactas.{RESET}")
+                print(f"{YELLOW}Sin resoluciones exactas.{RESET}")
                 choice = DownloadChoice("video", None)
-                print(f"{CYAN}[{option}]{RESET} Video — mejor calidad disponible")
+                print(f"{CYAN}[{option}]{RESET} Mejor disponible")
                 actions[str(option)] = choice
 
             valid = set(actions) | {"0"}
             if displayed != resolutions:
-                print(f"{MAGENTA}[M]{RESET} Mostrar las {len(resolutions)} calidades detectadas")
+                print(f"{MAGENTA}[M]{RESET} {len(resolutions)} calidades")
                 valid.add("m")
             print(f"{RED}[0]{RESET} Cancelar")
 
@@ -432,26 +402,22 @@ class FlowCLI:
         )
         while True:
             print()
-            print(f"{GREEN}{BOLD}{media_label} LISTO PARA USAR{RESET}")
-            print(f"{GRAY}Archivo: {path.name}{RESET}")
+            print(f"{GREEN}{BOLD}{media_label} listo{RESET}  {GRAY}{path.name}{RESET}")
             if PLATFORM.is_termux:
-                print(f"{CYAN}Dónde encontrarlo: {android_location}{RESET}")
+                print(f"{GRAY}{android_location}{RESET}")
             elif PLATFORM.is_ashell:
-                folder = path.parent.name
                 print(
-                    f"{CYAN}Dónde encontrarlo: Archivos › a-Shell › FlowMobile › Downloads › {folder}{RESET}"
+                    f"{GRAY}Archivos › a-Shell › FlowMobile › Downloads › {path.parent.name}{RESET}"
                 )
             else:
-                print(f"{CYAN}Ubicación: {path.parent}{RESET}")
-            print(f"{MAGENTA}{BOLD}SIGUIENTE ACCIÓN{RESET}")
-            self.menu_item(
-                "1",
-                "Abrir / Compartir archivo" if getattr(PLATFORM, "is_desktop", False) else "Compartir / Guardar en Archivos",
-                "abre su carpeta en el sistema" if getattr(PLATFORM, "is_desktop", False) else f"abre la vista de {PLATFORM.mobile_os} para enviar o guardar",
+                print(f"{GRAY}{path.parent}{RESET}")
+            share_label = (
+                "Abrir carpeta" if getattr(PLATFORM, "is_desktop", False) else "Compartir"
             )
+            self.menu_item("1", share_label)
             self.menu_item("2", "Reproducir")
-            self.menu_item("3", "Mostrar ubicación")
-            self.menu_item("4", "Volver al menú")
+            self.menu_item("3", "Ubicación")
+            self.menu_item("4", "Menú")
             self.menu_item("0", "Salir")
 
             choice = self.prompt_choice("Selecciona", {"0", "1", "2", "3", "4"})
@@ -489,8 +455,8 @@ class FlowCLI:
     def new_download(self) -> None:
         if not self.ensure_download_storage():
             return
-        self.logo("NUEVA DESCARGA")
-        print(f"{GRAY}Pega un enlace web o escribe 0 para volver.{RESET}")
+        self.logo("DESCARGAR")
+        print(f"{GRAY}Enlace, o 0 para volver.{RESET}")
         url = self.prompt_url()
 
         if url == "0":
@@ -512,18 +478,18 @@ class FlowCLI:
             return
 
         print()
-        print(f"{MAGENTA}{BOLD}Vista previa{RESET}")
-        print(f"{GRAY}Plataforma:{RESET} {media.platform}")
-        print(f"{GRAY}Título:{RESET} {media.title}")
-        print(f"{GRAY}Autor:{RESET} {media.uploader}")
-        print(f"{GRAY}Duración:{RESET} {format_time(media.duration)}")
+        print(f"{WHITE}{BOLD}{media.title[:42]}{RESET}")
+        print(
+            f"{GRAY}{media.platform} · {media.uploader[:22]} · "
+            f"{format_time(media.duration)}{RESET}"
+        )
         detected = self.service.resolutions(media)
         if detected:
-            values = ", ".join(f"{value}p" for value in detected[:10])
-            suffix = "…" if len(detected) > 10 else ""
-            print(f"{GRAY}Calidades detectadas:{RESET} {values}{suffix}")
+            values = " ".join(f"{value}p" for value in detected[:8])
+            suffix = " …" if len(detected) > 8 else ""
+            print(f"{GRAY}{values}{suffix}{RESET}")
         else:
-            print(f"{YELLOW}Calidades: el sitio no informó resoluciones separadas.{RESET}")
+            print(f"{YELLOW}Sin resoluciones separadas.{RESET}")
 
         choice = self.choose_quality(media)
         if choice is None:
@@ -554,11 +520,9 @@ class FlowCLI:
             self.pause()
             return
 
-        print(f"\n{GREEN}{BOLD}✓ DESCARGA COMPLETADA{RESET}")
-        print(f"{GRAY}Archivo:{RESET} {result.file.name}")
-        print(f"{GRAY}Tamaño:{RESET} {format_bytes(result.file.stat().st_size)}")
+        print(f"\n{GREEN}{BOLD}✓ Listo{RESET}  {GRAY}{format_bytes(result.file.stat().st_size)}{RESET}")
         if result.quality:
-            print(f"{GRAY}Calidad final verificada:{RESET} {GREEN}{result.quality}{RESET}")
+            print(f"{GREEN}{result.quality}{RESET}")
         if result.warning:
             print(f"{YELLOW}Aviso: {result.warning}{RESET}")
         notify_complete(result.file)
@@ -569,14 +533,13 @@ class FlowCLI:
             print(f"{GRAY}No se encontraron descargas.{RESET}")
             return
         for index, item in enumerate(history[:15], 1):
-            print(f"{GREEN}{index:02d}.{RESET} {(item.get('title') or 'Sin título')[:44]}")
+            print(f"{CYAN}{index:02d}{RESET} {(item.get('title') or 'Sin título')[:36]}")
             print(
                 f"    {GRAY}{item.get('platform', '')} · "
                 f"{item.get('type', '')} · "
                 f"{item.get('resolution') or '—'} · "
                 f"{format_bytes(item.get('size'))}{RESET}"
             )
-            print(f"    {CYAN}{self.line(34)}{RESET}")
 
     def show_history(self) -> None:
         try:
@@ -589,8 +552,7 @@ class FlowCLI:
         while True:
             self.logo("HISTORIAL")
             self.print_history(history)
-            print()
-            self.menu_item("1", "Buscar", "por título, sitio, tipo, calidad o fecha")
+            self.menu_item("1", "Buscar")
             self.menu_item("0", "Volver")
             choice = self.prompt_choice("Selecciona", {"0", "1"})
             if choice == "0":
@@ -602,22 +564,17 @@ class FlowCLI:
 
     def show_system_repair(self) -> None:
         while True:
-            self.logo("SISTEMA Y REPARACIÓN")
-            print(
-                f"{GRAY}{PLATFORM.mobile_os} · {PLATFORM.name} · "
-                f"FlowMobile {APP_VERSION}{RESET}"
-            )
+            self.logo("SISTEMA")
             if PLATFORM.is_termux:
                 storage = "Android público" if TERMUX_DOWNLOADS_PUBLIC else "permiso pendiente"
                 print(f"{GRAY}Almacenamiento: {storage}{RESET}")
-            print(f"{GRAY}Revisa y repara sin borrar tus descargas.{RESET}\n")
             for status in dependency_statuses():
                 mark = "✓" if status.ok else "!"
                 color = GREEN if status.ok else YELLOW
-                print(f"{color}{mark} {status.name:<10}{RESET} {status.detail}")
+                print(f"{color}{mark} {status.name:<10}{RESET} {GRAY}{status.detail}{RESET}")
             print()
-            self.menu_item("1", "Reparar dependencias", "Python no se reemplaza; repara yt-dlp, EJS y multimedia")
-            self.menu_item("2", "Limpiar temporales dañados", "solo .part, .ytdl, .tmp y conversiones incompletas")
+            self.menu_item("1", "Reparar", "yt-dlp, EJS, FFmpeg")
+            self.menu_item("2", "Limpiar temporales")
             self.menu_item("3", "Reparar y limpiar")
             self.menu_item("0", "Volver")
             choice = self.prompt_choice("Selecciona", {"0", "1", "2", "3"})
@@ -643,11 +600,10 @@ class FlowCLI:
     def show_real_tests(self) -> None:
         if not self.ensure_download_storage():
             return
-        self.logo("PRUEBAS REALES")
-        print(f"{YELLOW}Estas pruebas descargan archivos reales y consumen datos.{RESET}")
-        print(f"{GRAY}Usa enlaces públicos propios o que tengas permiso de descargar.{RESET}\n")
-        self.menu_item("1", "Prueba rápida", "un enlace · vídeo 360p y audio M4A")
-        self.menu_item("2", "Prueba completa", "hasta 30 descargas en cinco plataformas")
+        self.logo("PRUEBAS")
+        print(f"{YELLOW}Descargan archivos reales.{RESET}")
+        self.menu_item("1", "Rápida", "360p + M4A")
+        self.menu_item("2", "Completa", "5 plataformas")
         self.menu_item("0", "Volver")
         mode = self.prompt_choice("Selecciona", {"0", "1", "2"})
         if mode == "0":
@@ -856,12 +812,12 @@ class FlowCLI:
 
     def show_batches(self) -> None:
         while True:
-            self.logo("DESCARGAS POR LOTES")
+            self.logo("LOTES")
             pending = len(list_queues(incomplete_only=True))
-            print(f"{GRAY}Colas pendientes: {pending}{RESET}\n")
-            self.menu_item("1", "Pegar varios enlaces")
-            self.menu_item("2", "Importar una playlist")
-            self.menu_item("3", "Reanudar una cola")
+            print(f"{GRAY}Pendientes: {pending}{RESET}")
+            self.menu_item("1", "Varios enlaces")
+            self.menu_item("2", "Playlist")
+            self.menu_item("3", "Reanudar")
             self.menu_item("0", "Volver")
             choice = self.prompt_choice("Selecciona", {"0", "1", "2", "3"})
             if choice == "0":
@@ -898,11 +854,11 @@ class FlowCLI:
 
     def show_files(self) -> None:
         self.logo("ARCHIVOS")
-        for label, folder in (("VIDEOS", VIDEO_DIR), ("AUDIO", AUDIO_DIR)):
-            print(f"{MAGENTA}{BOLD}{label}{RESET}  {GRAY}{folder}{RESET}")
+        for label, folder in (("Vídeo", VIDEO_DIR), ("Audio", AUDIO_DIR)):
+            print(f"{MAGENTA}{BOLD}{label}{RESET}")
             if PLATFORM.is_termux:
-                android_folder = "Movies › FlowMobile" if label == "VIDEOS" else "Music › FlowMobile"
-                print(f"{CYAN}En Android: Archivos › Almacenamiento interno › {android_folder}{RESET}")
+                android_folder = "Movies › FlowMobile" if label == "Vídeo" else "Music › FlowMobile"
+                print(f"{GRAY}{android_folder}{RESET}")
             try:
                 files = sorted(
                     (path for path in folder.iterdir() if path.is_file()),
@@ -941,29 +897,18 @@ class FlowCLI:
         self.start_background_update_check()
         while True:
             with self.buffered_screen():
-                self.logo("MENÚ PRINCIPAL")
+                self.logo("MENÚ")
                 self.dashboard()
-                self.section("DESCARGAR")
-                self.menu_item("1", "Nueva descarga")
-                self.menu_item("2", "Lotes y playlists")
-                self.section("BIBLIOTECA")
-                self.menu_item("3", "Historial")
-                self.menu_item("4", "Mis archivos")
-                self.section("NOVEDADES")
-                if self.flow_update_version:
-                    self.menu_item(
-                        "5",
-                        f"¡FlowMobile {self.flow_update_version} disponible!",
-                    )
-                else:
-                    self.menu_item("5", "Actualizaciones")
-                self.section("CONFIGURACIÓN")
-                self.menu_item(
-                    "6",
-                    "Ayuda y herramientas",
-                    "sugerencias · errores · ajustes · reparación",
-                )
                 print()
+                self.menu_item("1", "Descargar")
+                self.menu_item("2", "Lotes")
+                self.menu_item("3", "Historial")
+                self.menu_item("4", "Archivos")
+                if self.flow_update_version:
+                    self.menu_item("5", f"Actualizar {self.flow_update_version}")
+                else:
+                    self.menu_item("5", "Actualizar")
+                self.menu_item("6", "Más")
                 self.menu_item("0", "Salir")
 
             self._menu_ready.set()

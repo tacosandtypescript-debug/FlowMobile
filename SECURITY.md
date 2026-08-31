@@ -22,7 +22,7 @@ Solo la versión estable más reciente recibe correcciones de seguridad.
   código y la rama principal exige verificaciones antes de integrar cambios.
 - Una prueba semanal instala el release estable desde cero en Windows y Linux.
 
-El Centro de seguridad está en **Herramientas → Centro de seguridad**. Si la
+El centro de seguridad está en **Más → Seguridad**. Si la
 integridad falla, no introduzcas cookies ni ejecutes actualizaciones: reinstala
 desde el repositorio oficial.
 

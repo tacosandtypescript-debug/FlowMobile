@@ -17,16 +17,14 @@ from flow.presentation.theme import *
 
 def show_sessions(cli: Any) -> None:
     while True:
-        cli.logo("COOKIES Y SESIONES")
+        cli.logo("SESIÓN")
         status = session_status()
         if status.configured:
-            print(f"{GREEN}✓ Sesión privada configurada{RESET}")
-            print(f"{GRAY}{status.cookies} cookies · {format_bytes(status.size)}{RESET}")
+            print(f"{GREEN}✓ {status.cookies} cookies · {format_bytes(status.size)}{RESET}")
         else:
-            print(f"{GRAY}No hay cookies importadas.{RESET}")
-        print(f"\n{YELLOW}Nunca pegues contraseñas o tokens directamente en la terminal.{RESET}")
-        cli.menu_item("1", "Importar cookies.txt", "formato Netscape exportado por el navegador")
-        cli.menu_item("2", "Eliminar sesión privada")
+            print(f"{GRAY}Sin cookies.{RESET}")
+        cli.menu_item("1", "Importar cookies.txt")
+        cli.menu_item("2", "Eliminar sesión")
         cli.menu_item("0", "Volver")
         choice = cli.prompt_choice("Selecciona", {"0", "1", "2"})
         if choice == "0":
@@ -48,30 +46,20 @@ def show_sessions(cli: Any) -> None:
 
 
 def show_supported_platforms(cli: Any) -> None:
-    cli.logo("PLATAFORMAS COMPATIBLES")
-    print(
-        f"{GREEN}✓ {len(supported_platforms())} plataformas reconocidas{RESET}\n"
-        f"{GRAY}El contenido privado puede requerir cookies; la disponibilidad "
-        f"también depende del sitio y la región.{RESET}\n"
-    )
+    cli.logo("PLATAFORMAS")
+    print(f"{GRAY}{len(supported_platforms())} sitios · privado puede pedir cookies{RESET}")
     for group, names in PLATFORM_GROUPS:
-        print(f"{MAGENTA}{BOLD}{group.upper()}{RESET}")
-        for name in names:
-            print(f"  {CYAN}•{RESET} {name}")
-        print()
+        print(f"{MAGENTA}{group}{RESET}  {GRAY}{' · '.join(names)}{RESET}")
     cli.pause()
 
 
 def show_feedback(cli: Any) -> None:
     while True:
-        cli.logo("SUGERENCIAS Y REPORTES")
-        print(
-            f"{GRAY}GitHub abrirá un formulario para que lo revises antes de enviarlo. "
-            f"FlowMobile no publica nada automáticamente.{RESET}\n"
-        )
-        cli.menu_item("1", "Enviar una sugerencia", "funciones, plataformas o interfaz")
-        cli.menu_item("2", "Reportar un error", "incluye versión y dispositivo, sin datos privados")
-        cli.menu_item("3", "Problema de seguridad", "reporte privado para el responsable")
+        cli.logo("REPORTES")
+        print(f"{GRAY}GitHub abre un formulario; nada se envía solo.{RESET}")
+        cli.menu_item("1", "Sugerencia")
+        cli.menu_item("2", "Error")
+        cli.menu_item("3", "Seguridad")
         cli.menu_item("0", "Volver")
         choice = cli.prompt_choice("Selecciona", {"0", "1", "2", "3"})
         if choice == "0":
@@ -94,10 +82,9 @@ def show_feedback(cli: Any) -> None:
 
 def show_diagnostics_menu(cli: Any) -> None:
     while True:
-        cli.logo("DIAGNÓSTICO Y PRUEBAS")
-        print(f"{GRAY}Revisa el funcionamiento sin mezclarlo con los ajustes.{RESET}\n")
-        cli.menu_item("1", "Informe de diagnóstico", "privado y preparado para compartir")
-        cli.menu_item("2", "Pruebas reales", "descargan archivos y consumen datos")
+        cli.logo("DIAGNÓSTICO")
+        cli.menu_item("1", "Informe")
+        cli.menu_item("2", "Pruebas reales")
         cli.menu_item("0", "Volver")
         choice = cli.prompt_choice("Selecciona", {"0", "1", "2"})
         if choice == "0":
@@ -109,7 +96,7 @@ def show_diagnostics_menu(cli: Any) -> None:
 
 
 def show_security(cli: Any) -> None:
-    cli.logo("CENTRO DE SEGURIDAD")
+    cli.logo("SEGURIDAD")
     harden_private_files()
     status = security_status()
     source = (
@@ -139,18 +126,18 @@ def show_security(cli: Any) -> None:
 def show_tools(cli: Any) -> None:
     while True:
         with cli.buffered_screen():
-            cli.logo("AYUDA Y HERRAMIENTAS")
-            cli.section("AYUDA")
-            cli.menu_item("1", "Sugerencias y reportes", "buzón público y seguridad privada")
-            cli.menu_item("2", "Plataformas compatibles", "35 sitios reconocidos")
-            cli.section("PRIVACIDAD Y PREFERENCIAS")
-            cli.menu_item("3", "Centro de seguridad", "origen, integridad y privacidad")
-            cli.menu_item("4", "Cookies y sesiones")
+            cli.logo("MÁS")
+            cli.section("Ayuda")
+            cli.menu_item("1", "Reportes")
+            cli.menu_item("2", "Plataformas")
+            cli.section("Privacidad")
+            cli.menu_item("3", "Seguridad")
+            cli.menu_item("4", "Cookies")
             cli.menu_item("5", "Ajustes")
-            cli.section("MANTENIMIENTO")
-            cli.menu_item("6", "Sistema y reparación", "estado, dependencias y temporales")
-            cli.menu_item("7", "Diagnóstico y pruebas", "informe privado y pruebas reales")
-            cli.menu_item("8", "Desinstalar FlowMobile")
+            cli.section("Sistema")
+            cli.menu_item("6", "Reparar")
+            cli.menu_item("7", "Diagnóstico")
+            cli.menu_item("8", "Desinstalar")
             cli.menu_item("0", "Volver")
         choice = cli.prompt_choice(
             "Selecciona",
@@ -188,10 +175,10 @@ def show_diagnostic(cli: Any) -> None:
 
 
 def show_uninstall(cli: Any) -> None:
-    cli.logo("DESINSTALAR FLOWMOBILE")
-    print(f"{YELLOW}Esta acción elimina el comando flow y el código instalado.{RESET}\n")
-    cli.menu_item("1", "Desinstalar y conservar datos", "mantiene descargas, historial, colas y cookies")
-    cli.menu_item("2", "Borrar absolutamente todo", "incluye descargas, cookies, colas, historial y ajustes")
+    cli.logo("DESINSTALAR")
+    print(f"{YELLOW}Quita el comando flow y el código.{RESET}")
+    cli.menu_item("1", "Conservar datos")
+    cli.menu_item("2", "Borrar todo")
     cli.menu_item("0", "Cancelar")
     choice = cli.prompt_choice("Selecciona", {"0", "1", "2"})
     if choice == "0":
@@ -246,14 +233,14 @@ def show_settings(cli: Any) -> None:
             if cli.settings.video_quality == "best"
             else f"Hasta {cli.settings.video_quality}p"
         )
-        cli.menu_item("1", "Formato predeterminado", kind_labels[cli.settings.default_kind])
-        cli.menu_item("2", "Calidad de video", quality)
-        auto_label = "Comprobar al iniciar" if cli.settings.auto_updates else "Desactivadas"
-        cli.menu_item("3", "Formato de audio", audio_labels[cli.settings.audio_format])
-        cli.menu_item("4", "Comprobar actualizaciones", auto_label)
-        clipboard_label = "Detectar al descargar" if cli.settings.clipboard_detection else "Desactivado"
+        cli.menu_item("1", "Formato", kind_labels[cli.settings.default_kind])
+        cli.menu_item("2", "Vídeo", quality)
+        auto_label = "Al iniciar" if cli.settings.auto_updates else "Off"
+        cli.menu_item("3", "Audio", audio_labels[cli.settings.audio_format])
+        cli.menu_item("4", "Actualizaciones", auto_label)
+        clipboard_label = "On" if cli.settings.clipboard_detection else "Off"
         cli.menu_item("5", "Portapapeles", clipboard_label)
-        cli.menu_item("6", "Colores", "Activados" if cli.settings.colors else "Desactivados")
+        cli.menu_item("6", "Colores", "On" if cli.settings.colors else "Off")
         mode_label = "Compacta" if cli.settings.interface_mode == "compact" else "Accesible"
         cli.menu_item("7", "Interfaz", mode_label)
         cli.menu_item("0", "Volver")

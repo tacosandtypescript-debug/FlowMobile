@@ -63,7 +63,7 @@ class InteractiveMenuTests(unittest.TestCase):
         with patch.object(__import__("sys"), "__stdout__", output):
             cli.announce_background_update("99.0.0")
         self.assertIn("99.0.0 disponible", output.getvalue())
-        self.assertIn("[5] Actualizaciones", output.getvalue())
+        self.assertIn("[5] Actualizar", output.getvalue())
 
     def test_termux_without_public_storage_blocks_downloads(self):
         cli = FlowCLI.__new__(FlowCLI)
@@ -180,6 +180,28 @@ class InteractiveMenuTests(unittest.TestCase):
         with patch("sys.stdout", output):
             cli.clear()
         self.assertNotIn("\033[2J", output.getvalue())
+
+    def test_menu_item_keeps_title_and_detail_on_one_line(self):
+        cli = FlowCLI.__new__(FlowCLI)
+        output = StringIO()
+        with patch("sys.stdout", output):
+            cli.menu_item("1", "Descargar", "enlace")
+        text = output.getvalue()
+        self.assertEqual(text.count("\n"), 1)
+        self.assertIn("[1]", text)
+        self.assertIn("Descargar", text)
+        self.assertIn("enlace", text)
+
+    def test_logo_uses_two_lines(self):
+        cli = FlowCLI.__new__(FlowCLI)
+        cli._tools_status = (True, True)
+        output = StringIO()
+        with patch("sys.stdout", output):
+            with patch.object(cli, "clear"):
+                cli.logo("MENÚ")
+        lines = [line for line in output.getvalue().splitlines() if line.strip()]
+        self.assertEqual(len(lines), 2)
+        self.assertIn("MENÚ", output.getvalue())
 
     def test_short_quality_list_is_preserved(self):
         values = [1080, 720, 480]

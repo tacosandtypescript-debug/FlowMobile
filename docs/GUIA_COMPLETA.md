@@ -97,7 +97,7 @@ región.
 
 ## Cookies y privacidad
 
-Desde **Ayuda y herramientas → Cookies y sesiones** se puede importar un
+Desde **Más → Cookies** se puede importar un
 `cookies.txt` en formato Netscape. FlowMobile lo copia al almacenamiento
 privado y nunca incluye cookies, enlaces, historial ni rutas personales en
 diagnósticos o reportes.
@@ -124,7 +124,7 @@ historial, ajustes, cookies ni colas activas.
 
 ## Desinstalación
 
-En **Ayuda y herramientas → Desinstalar FlowMobile** se puede:
+En **Más → Desinstalar** se puede:
 
 - quitar la aplicación conservando datos para una instalación futura; o
 - escribir `BORRAR` para eliminar programa, descargas, historial, cookies,
@@ -138,7 +138,7 @@ curl -fsSL https://raw.githubusercontent.com/tacosandtypescript-debug/FlowMobile
 
 ## Errores, sugerencias y seguridad
 
-El menú **Ayuda y herramientas → Sugerencias y reportes** abre los formularios
+El menú **Más → Reportes** abre los formularios
 del repositorio. Los errores normales pueden enviarse mediante
 [GitHub Issues](https://github.com/tacosandtypescript-debug/FlowMobile/issues).
 Las vulnerabilidades y datos sensibles deben enviarse de forma privada siguiendo

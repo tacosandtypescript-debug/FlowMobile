@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 8.0.8 — 2026-08-31
+
+- Menú principal y submenús más compactos: cabecera de dos líneas y opciones en una sola.
+- El panel de estado deja de usar una caja; muestra vídeos, audios y espacio en una línea.
+- Títulos más cortos (Descargar, Lotes, Más) para pantallas de iPhone.
+
 ## 8.0.7 — 2026-08-31
 
 - Compartir y reproducir en iPhone/iPad usan `ios_system` de a-Shell, no un proceso Unix aislado.
