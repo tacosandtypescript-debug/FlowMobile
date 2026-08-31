@@ -23,13 +23,13 @@ class ToolsMenuTests(unittest.TestCase):
         )
         show_tools(cli)
 
-        self.assertEqual(items[0], ("1", "Sugerencias y reportes"))
-        self.assertIn(("3", "Centro de seguridad"), items)
-        self.assertIn(("6", "Sistema y reparación"), items)
-        self.assertIn(("7", "Diagnóstico y pruebas"), items)
+        self.assertEqual(items[0], ("1", "Reportes"))
+        self.assertIn(("3", "Seguridad"), items)
+        self.assertIn(("6", "Reparar"), items)
+        self.assertIn(("7", "Diagnóstico"), items)
         self.assertNotIn("Sistema", {title for _, title in items})
         self.assertNotIn("Modo Reparar", {title for _, title in items})
         self.assertEqual(
             sections,
-            ["AYUDA", "PRIVACIDAD Y PREFERENCIAS", "MANTENIMIENTO"],
+            ["Ayuda", "Privacidad", "Sistema"],
         )

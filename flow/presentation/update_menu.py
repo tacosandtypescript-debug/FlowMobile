@@ -59,8 +59,8 @@ def record_update_check(cli: Any, check: Any) -> tuple[bool, bool, bool, bool]:
 def check_updates(cli: Any, force: bool = False, interactive: bool = False) -> None:
     if not force and not cli.settings.auto_updates:
         return
-    cli.logo("COMPROBAR ACTUALIZACIONES")
-    print(f"{CYAN}Revisando FlowMobile y sus herramientas…{RESET}")
+    cli.logo("ACTUALIZAR")
+    print(f"{GRAY}Comprobando…{RESET}")
     with cli._update_lock:
         check = check_available_updates()
         flow_pending, ytdlp_pending, ffmpeg_available, ffprobe_available = (
